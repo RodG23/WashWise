@@ -1,15 +1,46 @@
-export function ClienSearch() {
-    return (
-        <div className="h-[100%] grid grid-cols-3 grid-rows-3 ">
-          <label className=" col-start-2 flex items-end justify-baseline font-mono text-3xl">Cliente:</label>
-          <input 
-            type="text"
-            className="row-start-2 col-span-2 col-start-2 mr-20 mt-1 px-5 py-3 text-lg rounded-2xl bg-stone-200 outline-none border-1 border-stone-300 focus:border-stone-500 focus:border-2"
-            placeholder="Procurar Cliente..."
-          />
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { BiSearchAlt } from "react-icons/bi";
 
-          {/*Search result container*/}
+const ClientSearch = ({ setResult, setInput, input  }) => {
+  const API_URL = "https://jsonplaceholder.typicode.com/users";
 
-        </div>
-    )
-}
+  const userData = (value) => {
+    if (!value) {
+      setResult([]);
+      return;
+    }
+
+    axios.get(API_URL)
+    .then(res => {
+      const result = res.data
+        .filter(user =>
+          user && user.name && user.name.toLowerCase().includes(value.toLowerCase())
+        )
+        .sort((a, b) => a.name.localeCompare(b.name));
+        setResult(result);
+        console.log(result);
+      })
+      .catch(err => console.error("Erro ao buscar dados:", err));
+  };
+
+  const handleChange = (value) => {
+    setInput(value);
+    userData(value);
+  };
+
+  return (
+    <div className="bg-[#C1C0C0] w-[70%] rounded-2xl p-3 max-h-[30%] shadow-sm flex items-center">
+      <BiSearchAlt className="size-6" />
+      <input
+        type="text"
+        placeholder="Procurar Cliente..."
+        className="bg-transparent border-none outline-none text-xl ml-1 w-full"
+        value={input}
+        onChange={(e) => handleChange(e.target.value)}
+      />
+    </div>
+  );
+};
+
+export default ClientSearch;
