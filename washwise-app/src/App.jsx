@@ -1,12 +1,9 @@
 import "./App.css";
 import React, { useState } from "react";
 import ClientSearch from "./components/ClientSearch"
-import ClientResult from "./components/ClientResult"
 
 
 function App() {
-  const [result, setResult] = useState([])
-  const [input, setInput] = useState("");
   
   return (
     <div className="h-screen grid grid-cols-3 grid-rows-6 gap-4">
@@ -15,8 +12,7 @@ function App() {
         <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
           <p>Cliente:</p>
         </div>
-        <ClientSearch setResult = {setResult} setInput = {setInput} input = {input}/>
-        <ClientResult result = {result} setInput = {setInput} setResult = {setResult}/>
+        <ClientSearch/>
       </div>
       <div className="col-span-2 row-start-2 bg-[#E1E4F1]">3</div>
       <div className="col-span-2 row-span-4 row-start-3 bg-[#E1E4F1]">4</div>
