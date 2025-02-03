@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import axios from "axios";
 import { BiSearchAlt } from "react-icons/bi";
 
-//todo passagem de cursor diretamente para peça 
+//todo passagem de cursor para a quantidade, selecionado para replacement
 
 const ClientSearch = () => {
   const [result, setResult] = useState([]);
@@ -33,7 +33,7 @@ const ClientSearch = () => {
           .sort((a, b) => a.name.localeCompare(b.name));
         setResult(result);
       })
-      .catch((err) => console.error("Erro ao procurar cliente:", err));
+      .catch((err) => console.error("Erro ao procurar peça:", err));
   };
 
   const handleChange = (value) => {
@@ -88,7 +88,7 @@ const ClientSearch = () => {
         <input
           ref={inputRef}
           type="text"
-          placeholder="Procurar Cliente..."
+          placeholder="Procurar Peça..."
           className="bg-transparent border-none outline-none text-xl ml-1 w-full"
           value={input}
           onChange={(e) => handleChange(e.target.value)}
