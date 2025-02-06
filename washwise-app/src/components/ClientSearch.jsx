@@ -49,6 +49,11 @@ const ClientSearch = () => {
   };
 
   const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      setResult([]);
+      inputRef.current.blur();
+    }
+
     if (result.length === 0) return;
 
     if (e.key === "ArrowDown") {
@@ -66,10 +71,7 @@ const ClientSearch = () => {
       });
     } else if (e.key === "Enter" && selectedIndex >= 0) {
       handleItemClick(result[selectedIndex].name);
-    } else if (e.key === "Escape") {
-      setResult([]);
-      inputRef.current?.blur();
-    }
+    } 
   };
 
   const scrollToItem = (index) => {
@@ -104,7 +106,7 @@ const ClientSearch = () => {
               <div
                 key={id}
                 ref={(el) => (itemRefs.current[id] = el)}
-                className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2 
+                className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
                   hover:bg-stone-400 hover:rounded-2xl ${
                     isHighlighted ? "bg-stone-400 rounded-2xl" : ""
                   }`}

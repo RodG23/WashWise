@@ -1,10 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { BiSearchAlt } from "react-icons/bi";
 
 //todo passagem de cursor para a quantidade, selecionado para replacement
+//todo nao permitir nomes que nao tenham entrada
 
-const ClientSearch = () => {
+const ClientSearch = ({ clearInputTrigger, onRefChange }) => {
   const [result, setResult] = useState([]);
   const [input, setInput] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -13,6 +14,13 @@ const ClientSearch = () => {
   const itemRefs = useRef([]);
 
   const API_URL = "https://jsonplaceholder.typicode.com/users";
+
+  useEffect(() => {
+    if (clearInputTrigger) {
+      setInput("");
+      setResult([]);
+    }
+  }, [clearInputTrigger]);
 
   const userData = (value) => {
     if (value === "" || !value) {
@@ -37,18 +45,25 @@ const ClientSearch = () => {
   };
 
   const handleChange = (value) => {
+    onRefChange(value);
     setInput(value);
     userData(value);
     setSelectedIndex(-1);
   };
 
   const handleItemClick = (name) => {
+    onRefChange(name);
     setInput(name);
     setResult([]);
     inputRef.current?.blur();
   };
 
   const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      setResult([]);
+      inputRef.current?.blur();
+    }
+    
     if (result.length === 0) return;
 
     if (e.key === "ArrowDown") {
@@ -66,9 +81,6 @@ const ClientSearch = () => {
       });
     } else if (e.key === "Enter" && selectedIndex >= 0) {
       handleItemClick(result[selectedIndex].name);
-    } else if (e.key === "Escape") {
-      setResult([]);
-      inputRef.current?.blur();
     }
   };
 
