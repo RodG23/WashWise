@@ -8,18 +8,18 @@ import DynamicTable from "./components/DynamicTable";
 
 
 function App() {
-  const [ref, setRef] = useState(""); // Estado para a referência
-  const [quantity, setQuantity] = useState("1"); // Estado para a quantidade
+  const [ref, setRef] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [items, setItems] = useState([]);
-  const [clearInputTrigger, setClearInputTrigger] = useState(false);
+  const [clearInputTrigger, setClearInputTrigger] = useState(1);
 
-  // Função para atualizar a referência
+
   const getRef = (newRef) => {
-    setRef(newRef); // Atualiza o estado da referência
+    setRef(newRef);
   };
 
   const getQuantity = (newQuantity) => {
-    setQuantity(newQuantity); // Atualiza o estado da quantidade
+    setQuantity(newQuantity);
   };
 
   const addItem = () => {
@@ -27,13 +27,18 @@ function App() {
       const newItem = { ref, quantity };
       setItems((prevItems) => [...prevItems, newItem]);
       console.log('Item adicionado:', newItem);
-      // Limpa os campos após adicionar
       setRef('');
       setQuantity("");
-      setClearInputTrigger((prev) => !prev);
+      setClearInputTrigger((prev) => prev + 1);
     } else {
       alert('Por favor, preencha todos os campos.');
     }
+  };
+
+  const deleteItem = (index) => {
+    const updatedItems = [...items];
+    updatedItems.splice(index, 1);
+    setItems(updatedItems);
   };
   
   return (
@@ -64,15 +69,8 @@ function App() {
           </div>
         </div>
       </div>
-      <div className="col-span-2 row-span-4 row-start-3 bg-[#E1E4F1]">
-        <h2 className="text-2xl mb-3">Itens Adicionados:</h2>
-        <ul>
-          {items.map((item, index) => (
-            <li key={index} className="mb-2">
-              {item.ref} - Quantidade: {item.quantity}
-            </li>
-          ))}
-        </ul>
+      <div className="col-span-2 row-span-4 row-start-3 bg-[#E1E4F1] flex items-center justify-center">
+        <DynamicTable items={items} onDelete={deleteItem}/>
       </div>
       <div className="row-span-2 col-start-3 row-start-3 bg-[#E1E4F1]">5</div>
       <div className="col-start-3 row-start-5 bg-[#E1E4F1]">6</div>
