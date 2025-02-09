@@ -1,43 +1,45 @@
 import React, { useState } from "react";
-import { FaReceipt, FaUsers, FaTshirt } from "react-icons/fa";
+import { LuUsersRound } from "react-icons/lu";
+import { TfiReceipt } from "react-icons/tfi";
+import { GiClothesline } from "react-icons/gi";
+import AppAntigo from "./AppAntigo"; // Importa o código antigo
 
 const Tabs = () => {
   const [activeTab, setActiveTab] = useState("talão");
 
   const tabs = [
-    { id: "talão", label: "Novo Talão", icon: <FaReceipt size={24} /> },
-    { id: "clientes", label: "Clientes", icon: <FaUsers size={24} /> },
-    { id: "peças", label: "Peças", icon: <FaTshirt size={24} /> },
+    { name: "Novo Talão", icon: <TfiReceipt size={30} />, id: "talão" },
+    { name: "Clientes", icon: <LuUsersRound size={30} />, id: "clientes" },
+    { name: "Peças", icon: <GiClothesline size={30}/>, id: "peças" },
   ];
-
-  return (
-    <div className="h-screen flex flex-col w-full">
-      {/* Abas superiores (20% da altura) */}
-      <div className="h-[10%] w-full flex border-b border-gray-300 bg-white shadow-md fixed top-0">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex flex-col items-center justify-center transition-all duration-200 border-b-4 ${
-              activeTab === tab.id
-                ? "border-purple-500 bg-gray-200"
-                : "border-transparent hover:bg-gray-100"
-            }`}
-          >
-            {tab.icon}
-            <span className="text-sm mt-1">{tab.label}</span>
-          </button>
-        ))}
+  
+    return (
+      <div className="h-screen flex flex-col bg-[#E1E4F1]">
+        {/* Tabs - 10% da altura */}
+        <div className="h-[10%] flex bg-[#E1E4F1] text-2xl">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`flex flex-col flex-1 items-center justify-center ${
+                activeTab === tab.id ? "bg-[#E1E4F1] font-medium border-b-2 border-l-1 border-r-1 border-[#AFAFAF]" : "bg-white border-l-1 border-r-1 border-[#D1D1D1]"
+              }`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.icon}
+              <span>{tab.name}</span>
+            </button>
+          ))}
+        </div>
+  
+        {/* Conteúdo - 90% da altura */}
+        <div className="h-[90%] bg-[#E1E4F1]">
+          {activeTab === "clientes" && <div className="p-4">Clientes</div>}
+          {activeTab === "talão" && <AppAntigo />}
+          {activeTab === "peças" && <div className="p-4">Peças</div>}
+        </div>
       </div>
-
-      {/* Conteúdo abaixo das abas (80% da altura) */}
-      <div className="h-[80%] mt-[10%] p-4 bg-gray-100">
-        {activeTab === "talão" && <p>Conteúdo da aba Novo Talão</p>}
-        {activeTab === "clientes" && <p>Lista de Clientes</p>}
-        {activeTab === "peças" && <p>Gestão de Peças</p>}
-      </div>
-    </div>
-  );
-};
-
-export default Tabs;
+    );
+  };
+  
+  export default Tabs;
+  
