@@ -16,14 +16,12 @@ const CheckboxSelector = () => {
         {options.map((option) => (
           <label key={option} className="flex items-center justify-center space-x-2 cursor-pointer text-2xl ">
             <span>{option}</span>
-            <div className="bg-[#928181]">
             <input
               type="checkbox"
               checked={selected === option}
               onChange={() => handleChange(option)}
-              className="size-5 accent-[#928181] rounded-2xl"
+              className="size-5 accent-[#928181] ring-1 ring-[#928181] rounded-2xl "
             />
-            </div>
           </label>
         ))}
       </div>

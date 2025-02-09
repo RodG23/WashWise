@@ -89,3 +89,17 @@ function App() {
 }
 
 export default App;
+
+// import React from "react";
+// import Tabs from "./components/Tabs";
+
+// function App() {
+//   return (
+//     <div className="h-screen flex items-center justify-center bg-gray-50">
+//       <Tabs />
+//     </div>
+//   );
+// }
+
+// export default App;
+
