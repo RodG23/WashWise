@@ -2,9 +2,7 @@ import React, { useState, useRef } from "react";
 import axios from "axios";
 import { BiSearchAlt } from "react-icons/bi";
 
-//todo passagem de cursor diretamente para peça 
-
-const ClientSearch = () => {
+const ClientSearch = ({ refSearchRef }) => {
   const [result, setResult] = useState([]);
   const [input, setInput] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -46,6 +44,7 @@ const ClientSearch = () => {
     setInput(name);
     setResult([]);
     inputRef.current?.blur();
+    refSearchRef.current?.focus();
   };
 
   const handleKeyDown = (e) => {

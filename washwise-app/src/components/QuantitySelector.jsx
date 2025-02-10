@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef } from "react";
 import { BiMinus, BiPlus } from "react-icons/bi";
 
-//todo adicionar a tabela e passar cursor para peça
-
-const QuantitySelector = ({ clearInputTrigger, onQuantityChange }) => {
+const QuantitySelector = forwardRef(({ clearInputTrigger, onQuantityChange, refSearchRef, onClick }, ref) => {
   const [localQuantity, setLocalQuantity] = useState("1");
 
   useEffect(() => {
@@ -50,6 +48,10 @@ const QuantitySelector = ({ clearInputTrigger, onQuantityChange }) => {
     } else if (e.key === "ArrowDown" || e.key === "-") {
       decreaseQuantity();
       e.preventDefault();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      onClick();
+      refSearchRef.current?.focus();
     }
   };
 
@@ -62,6 +64,7 @@ const QuantitySelector = ({ clearInputTrigger, onQuantityChange }) => {
         <BiMinus className="size-4" />
       </button>
       <input
+        ref={ref}
         type="text"
         value={localQuantity}
         onChange={handleChange}
@@ -78,6 +81,6 @@ const QuantitySelector = ({ clearInputTrigger, onQuantityChange }) => {
       </button>
     </div>
   );
-};
+});
 
 export default QuantitySelector;

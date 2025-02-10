@@ -13,13 +13,13 @@ const DynamicTable = ({ items, onDelete }) => {
     <div className="overflow-auto rounded-2xl h-[90%] w-[85%] flex text-3xl scrollbar-hidden">
       <table className="w-full h-full">
         <thead>
-          <tr className="bg-[#D9D9D9]">
+          <tr className="bg-[#D9D9D9] sticky top-0 z-10 ">
             <th className="w-1/6 p-2 font-normal text-center border-r-4 border-b-4 border-[#B8B8B8] pt-5 pb-5">Quantidade</th>
             <th className="w-4/6 p-2 font-normal text-left border-b-4 border-[#B8B8B8] pl-5">Peça</th>
             <th className="w-1/6 p-2 text-center border-b-4 border-[#B8B8B8]"></th>
           </tr>
         </thead>
-        <tbody className="overflow-y-auto max-h-[500px]">
+        <tbody className="overflow-y-scroll max-h-[500px]">
           {itemsWithEmptyRows.map((item, index) => (
             <tr key={index}>
               <td className="p-2 text-3xl text-center font-semibold border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%]">

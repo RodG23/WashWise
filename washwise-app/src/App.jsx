@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import ClientSearch from "./components/ClientSearch"
 import RefSearch from "./components/RefSearch"
 import QuantitySelector from "./components/QuantitySelector";
@@ -19,6 +19,8 @@ function App() {
   const [quantity, setQuantity] = useState("1");
   const [items, setItems] = useState([]);
   const [clearInputTrigger, setClearInputTrigger] = useState(1);
+  const refSearchRef = useRef(null);
+  const quantityInputRef = useRef(null);
 
   const tabs = [
     { name: "Novo Talão", icon: <TfiReceipt size={30} />, id: "talão" },
@@ -41,7 +43,7 @@ function App() {
       setItems((prevItems) => [...prevItems, newItem]);
       console.log('Item adicionado:', newItem);
       setRef('');
-      setQuantity("");
+      setQuantity("1");
       setClearInputTrigger((prev) => prev + 1);
     } else {
       alert('Por favor, preencha todos os campos.');
@@ -57,7 +59,7 @@ function App() {
   return (
     <div className="bg-gray-50 w-screen h-screen">
       <div className="h-screen flex flex-col bg-[#E1E4F1]">
-        <div className="h-[10%] flex bg-[#E1E4F1] text-2xl">
+        <div className="h-[8%] flex bg-[#E1E4F1] text-2xl">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -80,23 +82,23 @@ function App() {
               <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
                 <p>Cliente:</p>
               </div>
-              <ClientSearch/>
+              <ClientSearch refSearchRef={refSearchRef}/>
             </div>
             <div className="grid grid-cols-2 justify-start items-center col-span-2 row-start-1 bg-[#E1E4F1]">
               <div className="h-full ml-1 flex-col flex justify-center">
                 <div className="flex w-[70%] text-3xl overflow-clip mt-3 mb-1">
                   <p>Peça:</p>
                 </div>
-                <RefSearch clearInputTrigger={clearInputTrigger} onRefChange={getRef}/>
+                <RefSearch clearInputTrigger={clearInputTrigger} onRefChange={getRef} ref={refSearchRef} quantityInputRef={quantityInputRef}/>
               </div>
               <div className="grid grid-cols-2 h-full ml-1 ">
                 <div className="flex flex-col justify-center h-full items-start overflow-clip">
                   <div className="text-3xl mt-3 mb-1 w-[50%] text-center">
                     <p>Quantidade:</p>
                   </div>
-                  <QuantitySelector clearInputTrigger={clearInputTrigger} onQuantityChange={getQuantity}/>
+                  <QuantitySelector clearInputTrigger={clearInputTrigger} onQuantityChange={getQuantity} refSearchRef={refSearchRef} onClick={addItem} ref={quantityInputRef}/>
                 </div>
-                <div className="flex flex-col justify-center h-full items-start">
+                <div className="flex flex-col justify-center h-full items-start mt-5">
                   <AddButton onClick={addItem}/>
                 </div>
               </div>

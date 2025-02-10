@@ -1,16 +1,14 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, forwardRef } from "react";
 import axios from "axios";
 import { BiSearchAlt } from "react-icons/bi";
 
-//todo passagem de cursor para a quantidade, selecionado para replacement
 //todo nao permitir nomes que nao tenham entrada
 
-const ClientSearch = ({ clearInputTrigger, onRefChange }) => {
+const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef }, ref) => {
   const [result, setResult] = useState([]);
   const [input, setInput] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
-  const inputRef = useRef(null);
   const itemRefs = useRef([]);
 
   const API_URL = "https://jsonplaceholder.typicode.com/users";
@@ -55,13 +53,14 @@ const ClientSearch = ({ clearInputTrigger, onRefChange }) => {
     onRefChange(name);
     setInput(name);
     setResult([]);
-    inputRef.current?.blur();
+    ref.current?.blur();
+    quantityInputRef.current?.focus();
   };
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
       setResult([]);
-      inputRef.current?.blur();
+      ref.current?.blur();
     }
     
     if (result.length === 0) return;
@@ -98,7 +97,7 @@ const ClientSearch = ({ clearInputTrigger, onRefChange }) => {
       <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
         <BiSearchAlt className="size-6" />
         <input
-          ref={inputRef}
+          ref={ref}
           type="text"
           placeholder="Procurar Peça..."
           className="bg-transparent border-none outline-none text-xl ml-1 w-full"
@@ -132,6 +131,6 @@ const ClientSearch = ({ clearInputTrigger, onRefChange }) => {
       )}
     </div>
   );
-};
+});
 
-export default ClientSearch;
+export default RefSearch;
