@@ -1,5 +1,4 @@
-import React, { useState, useRef } from "react";
-import axios from "axios";
+import React, { useState, useRef, useEffect } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 
 const ClientSearch = ({ refSearchRef }) => {
@@ -10,33 +9,28 @@ const ClientSearch = ({ refSearchRef }) => {
   const inputRef = useRef(null);
   const itemRefs = useRef([]);
 
-  const API_URL = "https://jsonplaceholder.typicode.com/users";
-
-  const userData = (value) => {
+  const filterClients = (value) => {
     if (value === "" || !value) {
       setResult([]);
       return;
     }
 
-    axios
-      .get(API_URL)
-      .then((res) => {
-        const result = res.data
-          .filter(
-            (user) =>
-              user &&
-              user.name &&
-              user.name.toLowerCase().includes(value.toLowerCase())
-          )
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setResult(result);
-      })
-      .catch((err) => console.error("Erro ao procurar cliente:", err));
+    window.api.getClientes().then((clientes) => {
+      const filtered = clientes
+        .filter(
+          (cliente) =>
+            cliente &&
+            cliente.name &&
+            cliente.name.toLowerCase().includes(value.toLowerCase())
+        )
+        .sort((a, b) => a.name.localeCompare(b.namez));
+      setResult(filtered);
+    });
   };
 
   const handleChange = (value) => {
     setInput(value);
-    userData(value);
+    filterClients(value);
     setSelectedIndex(-1);
   };
 
@@ -112,7 +106,7 @@ const ClientSearch = ({ refSearchRef }) => {
                 onClick={() => handleItemClick(res.name)}
               >
                 <span>{res.name} {"("}</span>
-                <span className="opacity-50">{res.address.city}</span>
+                <span className="opacity-50">{res.address}</span>
                 <span>{")"}</span>
               </div>
             );
