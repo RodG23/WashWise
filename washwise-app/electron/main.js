@@ -35,6 +35,10 @@ app.on("window-all-closed", () => {
 ipcMain.handle("get-clientes", () => {
     return db.prepare("SELECT * FROM clients").all();
   });
+
+ipcMain.handle("get-refs", () => {
+  return db.prepare("SELECT * FROM products").all();
+});
   
 // API para adicionar um cliente
 ipcMain.handle("add-cliente", (event, cliente) => {

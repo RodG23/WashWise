@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 
-const ClientSearch = ({ refSearchRef }) => {
+const ClientSearch = ({ onClientChange, refSearchRef }) => {
   const [result, setResult] = useState([]);
   const [input, setInput] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -23,7 +23,7 @@ const ClientSearch = ({ refSearchRef }) => {
             cliente.name &&
             cliente.name.toLowerCase().includes(value.toLowerCase())
         )
-        .sort((a, b) => a.name.localeCompare(b.namez));
+        .sort((a, b) => a.name.localeCompare(b.name));
       setResult(filtered);
     });
   };
@@ -34,8 +34,9 @@ const ClientSearch = ({ refSearchRef }) => {
     setSelectedIndex(-1);
   };
 
-  const handleItemClick = (name) => {
-    setInput(name);
+  const handleItemClick = (cli) => {
+    setInput(cli.name);
+    onClientChange(cli);
     setResult([]);
     inputRef.current?.blur();
     refSearchRef.current?.focus();
@@ -63,7 +64,7 @@ const ClientSearch = ({ refSearchRef }) => {
         return newIndex;
       });
     } else if (e.key === "Enter" && selectedIndex >= 0) {
-      handleItemClick(result[selectedIndex].name);
+      handleItemClick(result[selectedIndex]);
     } 
   };
 
@@ -103,7 +104,7 @@ const ClientSearch = ({ refSearchRef }) => {
                   hover:bg-stone-400 hover:rounded-2xl ${
                     isHighlighted ? "bg-stone-400 rounded-2xl" : ""
                   }`}
-                onClick={() => handleItemClick(res.name)}
+                onClick={() => handleItemClick(res)}
               >
                 <span>{res.name} {"("}</span>
                 <span className="opacity-50">{res.address}</span>

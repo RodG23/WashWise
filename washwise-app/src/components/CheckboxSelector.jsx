@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 
-const CheckboxSelector = () => {
+const CheckboxSelector = ({ onCheckboxChange }) => {
   const [selected, setSelected] = useState("");
 
   const options = ["2ª", "3ª", "4ª", "5ª", "6ª", "Sº"];
 
   const handleChange = (option) => {
     setSelected(option);
+    onCheckboxChange(option);
   };
 
   return (
