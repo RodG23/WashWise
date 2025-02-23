@@ -26,11 +26,11 @@ const DynamicTable = ({ items, onDelete }) => {
                 {item?.quantity || ""}
               </td>
               <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-[#B8B8B8] border-b-2">
-                {item?.ref || ""}
+                {item?.ref.description || ""}
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-[#B8B8B8] border-b-2">
                 <div className="flex justify-center">
-                  {item?.ref && (
+                  {item?.ref.description && (
                     <IoIosClose className="size-12 opacity-55 cursor-pointer hover:opacity-100" onClick={() => onDelete(index)}/>
                   )}
                 </div>

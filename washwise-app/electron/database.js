@@ -22,7 +22,8 @@ db.exec(`
     ref TEXT PRIMARY KEY,
     type TEXT NOT NULL,
     color TEXT NOT NULL,
-    style TEXT NOT NULL,
+    style TEXT,
+    description TEXT NOT NULL,
     price REAL NOT NULL
   );
 

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, forwardRef } from "react";
-import axios from "axios";
 import { BiSearchAlt } from "react-icons/bi";
 
 //todo nao permitir nomes que nao tenham entrada
@@ -11,8 +10,6 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
 
   const itemRefs = useRef([]);
 
-  const API_URL = "https://jsonplaceholder.typicode.com/users";
-
   useEffect(() => {
     if (clearInputTrigger) {
       setInput("");
@@ -20,38 +17,35 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
     }
   }, [clearInputTrigger]);
 
-  const userData = (value) => {
+  const filterRefs = (value) => {
     if (value === "" || !value) {
       setResult([]);
       return;
     }
 
-    axios
-      .get(API_URL)
-      .then((res) => {
-        const result = res.data
-          .filter(
-            (user) =>
-              user &&
-              user.name &&
-              user.name.toLowerCase().includes(value.toLowerCase())
-          )
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setResult(result);
-      })
-      .catch((err) => console.error("Erro ao procurar peça:", err));
+    window.api.getRefs().then((refs) => {
+      const filtered = refs
+        .filter(
+          (ref) =>
+            ref &&
+            ref.ref &&
+            ref.ref.toLowerCase().includes(value.toLowerCase())
+        )
+        .sort((a, b) => a.ref.localeCompare(b.ref));
+      setResult(filtered);
+    });
   };
 
   const handleChange = (value) => {
     onRefChange(value);
     setInput(value);
-    userData(value);
+    filterRefs(value);
     setSelectedIndex(-1);
   };
 
-  const handleItemClick = (name) => {
-    onRefChange(name);
-    setInput(name);
+  const handleItemClick = (ref) => {
+    onRefChange(ref);
+    setInput(ref.ref);
     setResult([]);
     ref.current?.blur();
     quantityInputRef.current?.focus();
@@ -79,7 +73,7 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
         return newIndex;
       });
     } else if (e.key === "Enter" && selectedIndex >= 0) {
-      handleItemClick(result[selectedIndex].name);
+      handleItemClick(result[selectedIndex]);
     }
   };
 
@@ -119,10 +113,10 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
                   hover:bg-stone-400 hover:rounded-2xl ${
                     isHighlighted ? "bg-stone-400 rounded-2xl" : ""
                   }`}
-                onClick={() => handleItemClick(res.name)}
+                onClick={() => handleItemClick(res)}
               >
-                <span>{res.name} {"("}</span>
-                <span className="opacity-50">{res.address.city}</span>
+                <span>{res.ref} {"("}</span>
+                <span className="opacity-50">{res.description}</span>
                 <span>{")"}</span>
               </div>
             );

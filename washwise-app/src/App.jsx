@@ -12,11 +12,14 @@ import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
 import { GiClothesline } from "react-icons/gi";
 
+//todo melhorar a passagem de informacao entre componentes, so o essencial.
 
 function App() {
   const [activeTab, setActiveTab] = useState("talão");
+  const [client, setClient] = useState([]);
   const [ref, setRef] = useState("");
   const [quantity, setQuantity] = useState("1");
+  const [chekcbox, setCheckbox] = useState("");
   const [items, setItems] = useState([]);
   const [clearInputTrigger, setClearInputTrigger] = useState(1);
   const refSearchRef = useRef(null);
@@ -36,6 +39,15 @@ function App() {
   const getQuantity = (newQuantity) => {
     setQuantity(newQuantity);
   };
+
+  const getClient = (newClient) => {
+    setClient(newClient);
+  }
+
+  const getCheckbox = (newCheckbox) => {
+    setCheckbox(newCheckbox);
+    console.log(newCheckbox);
+  }
 
   const addItem = () => {
     if (ref && quantity) {
@@ -82,7 +94,7 @@ function App() {
               <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
                 <p>Cliente:</p>
               </div>
-              <ClientSearch refSearchRef={refSearchRef}/>
+              <ClientSearch onClientChange={getClient} refSearchRef={refSearchRef}/>
             </div>
             <div className="grid grid-cols-2 justify-start items-center col-span-2 row-start-1 bg-[#E1E4F1]">
               <div className="h-full ml-1 flex-col flex justify-center">
@@ -107,7 +119,7 @@ function App() {
               <DynamicTable items={items} onDelete={deleteItem}/>
             </div>
             <div className="row-span-2 col-start-3 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
-              <CheckboxSelector/>
+              <CheckboxSelector onCheckboxChange={getCheckbox}/>
             </div>
             <div className="col-start-3 row-start-4 bg-[#E1E4F1] flex justify-center items-center">
               <SaveButton/>

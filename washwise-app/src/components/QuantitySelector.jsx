@@ -59,7 +59,7 @@ const QuantitySelector = forwardRef(({ clearInputTrigger, onQuantityChange, refS
     <div className="flex items-center bg-[#C1C0C0] rounded-2xl p-3 shadow-sm w-[50%] justify-between overflow-clip">
       <button
         onClick={decreaseQuantity}
-        className="p-2 bg-gray-300 rounded-full hover:bg-stone-400 transition duration-200 active:scale-95"
+        className="p-2 bg-gray-300 rounded-full hover:bg-stone-400 transition duration-200 active:scale-95 cursor-pointer"
       >
         <BiMinus className="size-4" />
       </button>
@@ -75,7 +75,7 @@ const QuantitySelector = forwardRef(({ clearInputTrigger, onQuantityChange, refS
       />    
       <button
         onClick={increaseQuantity}
-        className="p-2 bg-gray-300 rounded-full hover:bg-stone-400 transition duration-200 active:scale-95"
+        className="p-2 bg-gray-300 rounded-full hover:bg-stone-400 transition duration-200 active:scale-95 cursor-pointer"
       >
         <BiPlus className="size-4" />
       </button>
