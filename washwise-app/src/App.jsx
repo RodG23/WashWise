@@ -13,13 +13,15 @@ import { TfiReceipt } from "react-icons/tfi";
 import { GiClothesline } from "react-icons/gi";
 
 //todo melhorar a passagem de informacao entre componentes, so o essencial.
+//todo quando escrever e der enter, seleciona o primeiro, permite que nao ande para baixo e garante validade na mm
+
 
 function App() {
   const [activeTab, setActiveTab] = useState("talão");
   const [client, setClient] = useState([]);
   const [ref, setRef] = useState("");
   const [quantity, setQuantity] = useState("1");
-  const [chekcbox, setCheckbox] = useState("");
+  const [checkbox, setCheckbox] = useState("");
   const [items, setItems] = useState([]);
   const [clearInputTrigger, setClearInputTrigger] = useState(1);
   const refSearchRef = useRef(null);
@@ -46,7 +48,6 @@ function App() {
 
   const getCheckbox = (newCheckbox) => {
     setCheckbox(newCheckbox);
-    console.log(newCheckbox);
   }
 
   const addItem = () => {
@@ -122,10 +123,10 @@ function App() {
               <CheckboxSelector onCheckboxChange={getCheckbox}/>
             </div>
             <div className="col-start-3 row-start-4 bg-[#E1E4F1] flex justify-center items-center">
-              <SaveButton/>
+              <SaveButton client={client} items={items} checkbox={checkbox}/>
             </div>
             <div className="col-start-3 row-start-5 bg-[#E1E4F1] flex justify-center items-start">
-              <SavePrintButton/>
+              <SavePrintButton client={client} items={items} checkbox={checkbox}/>
             </div>
           </div>
           </>}

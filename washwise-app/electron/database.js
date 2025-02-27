@@ -34,7 +34,7 @@ db.exec(`
     state TEXT NOT NULL,
     total_price REAL NOT NULL,
     date TEXT NOT NULL,
-    FOREIGN KEY (client_id) REFERENCES clientes(id)
+    FOREIGN KEY (client_id) REFERENCES clients(id)
   );
 `);
 
