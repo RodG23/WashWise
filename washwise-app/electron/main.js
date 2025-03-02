@@ -5,6 +5,7 @@ import db from "./database.js";
 import puppeteer from 'puppeteer';
 
 //todo adicionar aos recibos data de criacao
+//todo no print and save chama o save e depois chama o print no react tambem, faz o recibo la
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,13 +84,14 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
               font-family: Arial, sans-serif;
               margin: 0;
               padding: 0;
-              width: 100mm;
-              height: 150mm;
-              padding: 10px;
+              width: 80mm; /* Largura do papel */
+              min-height: 100mm; /* Altura mínima */
+              padding: 5mm;
             }
             .header {
               display: flex;
               justify-content: space-between;
+              font-size: 12px;
             }
             .header .left {
               width: 60%;
@@ -100,16 +102,22 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
             .table {
               width: 100%;
               border-collapse: collapse;
-              margin-top: 20px;
+              margin-top: 10px;
+              font-size: 12px;
             }
             .table th, .table td {
-              border: 1px solid #000;
-              padding: 5px;
+              border-bottom: 1px dashed #000; /* Linha tracejada */
+              padding: 4px;
               text-align: left;
+            }
+            .levantamento, .cliente {
+              margin-top: 10px;
+              font-size: 12px;
             }
             footer {
               text-align: center;
-              margin-top: 20px;
+              margin-top: 10px;
+              font-size: 10px;
             }
           </style>
         </head>
@@ -122,8 +130,8 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
               <p>Tlf: 253 634 051</p>
             </div>
             <div class="right">
-              <p><strong>ID: to-do </strong></p>
-              <p>12-03-2025</p> //todo
+              <p><strong>ID: 1</strong></p>
+              <p>12-03-2025</p>
             </div>
           </div>
           <div class="cliente">
@@ -132,7 +140,7 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
           <table class="table">
             <thead>
               <tr>
-                <th>Quantidade</th>
+                <th>Qtd</th>
                 <th>Peça</th>
               </tr>
             </thead>
