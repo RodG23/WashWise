@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import db from "./database.js";
 import puppeteer from 'puppeteer';
+import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 
 //todo adicionar aos recibos data de criacao
 //todo no print and save chama o save e depois chama o print no react tambem, faz o recibo la
