@@ -9,6 +9,7 @@ const SavePrintButton = ({ client, items, checkbox }) => {
     }
     const receipt = {
       client_id: client.id,
+      client_name: client.name,
       products: items,
       state: "pendente",
       total_price: items.reduce((total, item) => total + item.ref.price * item.quantity, 0),
