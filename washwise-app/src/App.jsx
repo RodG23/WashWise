@@ -59,9 +59,9 @@ function App() {
       setClearInputTrigger((prev) => prev + 1);
       refSearchRef.current?.focus();
     } else {
-      toast.warn("Por favor, preencha todos os campos.", {
+      toast.warn("Por favor, indique a peça que pretende adicionar.", {
         position: "top-right",
-        autoClose: 2000,
+        autoClose: 3000,
         className: "custom-warn-toast",
         progressClassName: "custom-warn-progress",
       });
