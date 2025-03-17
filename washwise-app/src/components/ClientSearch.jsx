@@ -4,7 +4,7 @@ import { BiSearchAlt } from "react-icons/bi";
 const ClientSearch = ({ onClientChange, refSearchRef }) => {
   const [result, setResult] = useState([]);
   const [input, setInput] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const inputRef = useRef(null);
   const itemRefs = useRef([]);
@@ -31,7 +31,7 @@ const ClientSearch = ({ onClientChange, refSearchRef }) => {
   const handleChange = (value) => {
     setInput(value);
     filterClients(value);
-    setSelectedIndex(-1);
+    setSelectedIndex(0);
   };
 
   const handleItemClick = (cli) => {

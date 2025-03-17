@@ -13,7 +13,6 @@ import { TfiReceipt } from "react-icons/tfi";
 import { GiClothesline } from "react-icons/gi";
 
 //todo melhorar a passagem de informacao entre componentes, so o essencial.
-//todo quando escrever e der enter, seleciona o primeiro, permite que nao ande para baixo e garante validade na mm
 
 
 function App() {
@@ -58,6 +57,7 @@ function App() {
       setRef('');
       setQuantity("1");
       setClearInputTrigger((prev) => prev + 1);
+      refSearchRef.current?.focus();
     } else {
       alert('Por favor, preencha todos os campos.');
     }
