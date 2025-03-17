@@ -1,10 +1,35 @@
 import React from "react";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const SavePrintButton = ({ client, items, checkbox }) => {
 
   const handleSaveAndPrint = async () => {
-    if (!client || items.length === 0 || !checkbox) {
-      alert("Preencha todos os dados.");
+    if (!client.id) {
+      toast.warn("Dados do cliente não preenchidos.", {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
+      return;
+    }
+    if (items.length === 0) {
+      toast.warn("Sem peças adicionadas.", {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
+      return;
+    }
+    if (!checkbox) {
+      toast.warn("Sem dia de levantamento preenchido.", {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
       return;
     }
     const receipt = {
