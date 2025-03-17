@@ -4,8 +4,7 @@ import { fileURLToPath } from "url";
 import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 
-//todo adicionar aos recibos data de criacao e usar essa data para meter no talao, nao fazer ua nova
-//todo no print and save chama o save e depois chama o print no react tambem, faz o recibo la
+//todo adicionar aos recibos data de criacao e usar essa data para meter no talao, nao fazer uma nova
 //todo refresh dos render ao guardar talao
 
 const __filename = fileURLToPath(import.meta.url);
@@ -157,14 +156,9 @@ async function printReceipt(receipt) {
     printer.bold(false);
     printer.println(receipt.date);
     printer.newLine();
-    
-    // Removed extra newlines to minimize gap before cutting
-    
-    // Use partialCut instead of cut if available (creates a cleaner edge)
-    // If your printer supports it, this will cut closer to the text
-    printer.cut(); // Fall back to regular cut if partialCut not supported
+  
+    printer.cut();
 
-      
     console.log(printer.getText());
   
     try {

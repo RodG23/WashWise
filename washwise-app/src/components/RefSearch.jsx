@@ -6,7 +6,7 @@ import { BiSearchAlt } from "react-icons/bi";
 const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef }, ref) => {
   const [result, setResult] = useState([]);
   const [input, setInput] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const itemRefs = useRef([]);
 
@@ -40,7 +40,7 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
     onRefChange(value);
     setInput(value);
     filterRefs(value);
-    setSelectedIndex(-1);
+    setSelectedIndex(0);
   };
 
   const handleItemClick = (ref) => {
