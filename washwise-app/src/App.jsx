@@ -11,9 +11,10 @@ import SavePrintButton from "./components/SavePrintButton"
 import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
 import { GiClothesline } from "react-icons/gi";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 //todo melhorar a passagem de informacao entre componentes, so o essencial.
-
 
 function App() {
   const [activeTab, setActiveTab] = useState("talão");
@@ -53,13 +54,17 @@ function App() {
     if (ref && quantity) {
       const newItem = { ref, quantity };
       setItems((prevItems) => [...prevItems, newItem]);
-      console.log('Item adicionado:', newItem);
-      setRef('');
+      setRef("");
       setQuantity("1");
       setClearInputTrigger((prev) => prev + 1);
       refSearchRef.current?.focus();
     } else {
-      alert('Por favor, preencha todos os campos.');
+      toast.warn("Por favor, preencha todos os campos.", {
+        position: "top-right",
+        autoClose: 2000,
+        className: "custom-warn-toast",
+        progressClassName: "custom-warn-progress",
+      });
     }
   };
 
@@ -133,6 +138,7 @@ function App() {
           {activeTab === "peças" && <div className="p-4">Peças</div>}
         </div>
       </div>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
 
 
