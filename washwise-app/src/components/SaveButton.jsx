@@ -39,7 +39,7 @@ const SaveButton = ({ client, items, checkbox }) => {
       client_id: client.id,
       products: items,
       state: "pendente",
-      total_price: items.reduce((total, item) => total + item.ref.price * item.quantity, 0),
+      total_price: items.reduce((total, item) => total + item.price * item.quantity, 0),
       date: checkbox
     };
 

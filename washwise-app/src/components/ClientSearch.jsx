@@ -1,21 +1,26 @@
 import React, { useState, useRef } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 
+//todo nao permitir clientes que nao existam, fazer verificação ao guardar talao
+
+//Passagem para app do nome e id de cliente
+//Get de clientes sem number, não é necessário
 const ClientSearch = ({ onClientChange, refSearchRef }) => {
-  const [result, setResult] = useState([]);
+  const [result, setResult] = useState([]); //lista de pesquisa
   const [input, setInput] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0); //indice selecionado
 
-  const inputRef = useRef(null);
-  const itemRefs = useRef([]);
+  const inputRef = useRef(null); //refereencia para input
+  const itemRefs = useRef([]); //lista de pesquisa mostrada
 
+  //filtrar pesquisa
   const filterClients = (value) => {
     if (value === "" || !value) {
       setResult([]);
       return;
     }
 
-    window.api.getClientes().then((clientes) => {
+    window.api.getClientesSearch().then((clientes) => {
       const filtered = clientes
         .filter(
           (cliente) =>
@@ -28,15 +33,17 @@ const ClientSearch = ({ onClientChange, refSearchRef }) => {
     });
   };
 
+  //lida com mudança no input
   const handleChange = (value) => {
     setInput(value);
     filterClients(value);
     setSelectedIndex(0);
   };
 
+  //lida com clique na lisat de pesquisas
   const handleItemClick = (cli) => {
     setInput(cli.name);
-    onClientChange(cli);
+    onClientChange({ name: cli.name, id: cli.id });
     setResult([]);
     inputRef.current?.blur();
     refSearchRef.current?.focus();

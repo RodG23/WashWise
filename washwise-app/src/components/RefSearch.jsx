@@ -1,15 +1,17 @@
 import React, { useState, useRef, useEffect, forwardRef } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 
-//todo nao permitir nomes que nao tenham entrada
+//todo nao permitir refs que nao existam, verificar ao adicionar
 
+//Passa para app descript, ref e price, deve ser suficiente
 const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef }, ref) => {
-  const [result, setResult] = useState([]);
+  const [result, setResult] = useState([]); //resultado de pesquisa
   const [input, setInput] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0); //indice da pesquisa
 
-  const itemRefs = useRef([]);
+  const itemRefs = useRef([]); //itens mostrados
 
+  //apaga o input quando se adiciona um item
   useEffect(() => {
     if (clearInputTrigger) {
       setInput("");
@@ -36,6 +38,7 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
     });
   };
 
+  //lida com mudança de input
   const handleChange = (value) => {
     onRefChange(value);
     setInput(value);
@@ -43,8 +46,9 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
     setSelectedIndex(0);
   };
 
+  //lida com clique
   const handleItemClick = (ref) => {
-    onRefChange(ref);
+    onRefChange({ref: ref.ref, description: ref.description, price: ref.price});
     setInput(ref.ref);
     setResult([]);
     ref.current?.blur();

@@ -17,15 +17,15 @@ import 'react-toastify/dist/ReactToastify.css';
 //todo melhorar a passagem de informacao entre componentes, so o essencial.
 
 function App() {
-  const [activeTab, setActiveTab] = useState("talão");
-  const [client, setClient] = useState([]);
-  const [ref, setRef] = useState("");
-  const [quantity, setQuantity] = useState("1");
-  const [checkbox, setCheckbox] = useState("");
-  const [items, setItems] = useState([]);
-  const [clearInputTrigger, setClearInputTrigger] = useState(1);
-  const refSearchRef = useRef(null);
-  const quantityInputRef = useRef(null);
+  const [activeTab, setActiveTab] = useState("talão"); //Estado da Tab
+  const [client, setClient] = useState([]); //Estado cliente selecionado
+  const [ref, setRef] = useState(""); //Estado referencia peça
+  const [quantity, setQuantity] = useState("1"); //Estado quantidade peça
+  const [checkbox, setCheckbox] = useState(""); //Estado dia levantamento
+  const [items, setItems] = useState([]); //Estado itens talão
+  const [clearInputTrigger, setClearInputTrigger] = useState(1); //Atualizando limpa input
+  const refSearchRef = useRef(null); //Ref para input de peça
+  const quantityInputRef = useRef(null); //Ref para quantidade de peça
 
   const tabs = [
     { name: "Novo Talão", icon: <TfiReceipt size={30} />, id: "talão" },
@@ -33,30 +33,35 @@ function App() {
     { name: "Peças", icon: <GiClothesline size={30}/>, id: "peças" },
   ];
 
-
+  //atualiza ref peça
   const getRef = (newRef) => {
     setRef(newRef);
   };
 
+  //atualiza quantidade
   const getQuantity = (newQuantity) => {
     setQuantity(newQuantity);
   };
 
+  //atualiza cliente
   const getClient = (newClient) => {
     setClient(newClient);
   }
 
+  //atualiza dia levant
   const getCheckbox = (newCheckbox) => {
     setCheckbox(newCheckbox);
   }
 
+  //adiciona item talao
   const addItem = () => {
     if (ref && quantity) {
-      const newItem = { ref, quantity };
+      const newItem = { ...ref, quantity };
+      console.log(newItem);
       setItems((prevItems) => [...prevItems, newItem]);
       setRef("");
       setQuantity("1");
-      setClearInputTrigger((prev) => prev + 1);
+      setClearInputTrigger((prev) => prev + 1); //Provoca a limpeza do input da peça
       refSearchRef.current?.focus();
     } else {
       toast.warn("Por favor, indique a peça que pretende adicionar.", {
@@ -68,12 +73,14 @@ function App() {
     }
   };
 
+  //retira item talao
   const deleteItem = (index) => {
     const updatedItems = [...items];
     updatedItems.splice(index, 1);
     setItems(updatedItems);
   };
   
+  //app
   return (
     <div className="bg-gray-50 w-screen h-screen">
       <div className="h-screen flex flex-col bg-[#E1E4F1]">
