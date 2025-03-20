@@ -36,6 +36,7 @@ app.on("window-all-closed", () => {
 });
 
 async function saveReceipt(receipt) {
+  console.log(receipt.total_price);
   try {
     const stmt = db.prepare(`
       INSERT INTO receipts (client_id, products_list, state, total_price, date)
@@ -130,7 +131,7 @@ async function printReceipt(receipt) {
       printer.print('│ ' + peca.quantity.toString().padEnd(col1Width - 3, ' ') + '│ ');
       
       // Handle product descriptions that might be too long
-      let description = peca.ref.description;
+      let description = peca.description;
       if (description.length > col2Width - 4) {
         description = description.substring(0, col2Width - 7) + '...';
       }
@@ -178,6 +179,10 @@ async function printReceipt(receipt) {
 ipcMain.handle("get-clientes", () => {
     return db.prepare("SELECT * FROM clients").all();
   });
+
+ipcMain.handle("get-clientes-search", () => {
+  return db.prepare("SELECT id, name, address FROM clients").all();
+});
 
 ipcMain.handle("get-refs", () => {
   return db.prepare("SELECT * FROM products").all();
