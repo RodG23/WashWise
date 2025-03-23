@@ -29,11 +29,12 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS receipts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    client_id INTEGER,
+    client_id INTEGER NOT NULL,
     products_list TEXT NOT NULL,
     state TEXT NOT NULL,
     total_price REAL NOT NULL,
     date TEXT NOT NULL,
+    created_at TEXT NOT NULL,
     FOREIGN KEY (client_id) REFERENCES clients(id)
   );
 `);

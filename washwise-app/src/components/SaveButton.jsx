@@ -1,12 +1,9 @@
 import React from "react";
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-//todo passar so o essencial do array de items
 
 const SaveButton = ({ client, items, checkbox }) => {
   
-
   const handleSave = async () => {
     if (!client.id) {
       toast.warn("Dados do cliente não preenchidos.", {
@@ -45,9 +42,10 @@ const SaveButton = ({ client, items, checkbox }) => {
 
     const response = await window.api.saveReceipt(receipt);
     if (response.success) {
-      alert("Talão guardado com sucesso!");
+      toast.success("Talão criado com sucesso!");
     } else {
-      alert("Erro ao guardar: " + response.error);
+      toast.error("Erro ao criar talão.");
+      //toast.error("Erro ao criar talão. " + response.error);
     }
   };
 

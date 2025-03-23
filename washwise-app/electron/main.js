@@ -5,7 +5,7 @@ import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 
 //todo adicionar aos recibos data de criacao e usar essa data para meter no talao, nao fazer uma nova
-//todo refresh dos render ao guardar talao
+//todo refresh dos render ao guardar talao fazer isso na resposta do sucesso, deve ser simples (limpar check, cliente e tabela)
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,25 +36,28 @@ app.on("window-all-closed", () => {
 });
 
 async function saveReceipt(receipt) {
-  console.log(receipt.total_price);
   try {
+    const createdAt = new Date().toISOString().slice(0, 19).replace("T", " "); // Formato "YYYY-MM-DD HH:MM:SS"
     const stmt = db.prepare(`
-      INSERT INTO receipts (client_id, products_list, state, total_price, date)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO receipts (client_id, products_list, state, total_price, date, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
     const info = stmt.run(
       receipt.client_id,
       JSON.stringify(receipt.products),
       receipt.state,
       receipt.total_price,
-      receipt.date
+      receipt.date,
+      createdAt
     );
+
     return { success: true, receipt_id: info.lastInsertRowid, client_id: receipt.client_id };
   } catch (error) {
-    console.error("Erro ao guardar o talão:", error);
+    console.error("Erro ao guardar o talão: ", error);
     return { success: false, error: error.message };
   }
 }
+
 
 async function printReceipt(receipt) {
   try {

@@ -2,12 +2,12 @@ import React from "react";
 import { IoIosClose } from "react-icons/io";
 
 const DynamicTable = ({ items, onDelete }) => {
-  const numberOfItemsToRender = 10;
+  const numberOfItemsToRender = 10; //maximo que mostra na tabela antes de scroll
 
   const itemsWithEmptyRows = [
     ...items,
     ...Array(Math.max(0, numberOfItemsToRender - items.length)).fill(null),
-  ];
+  ]; //fill na tabela quando nao tem 10
 
   return (
     <div className="overflow-auto rounded-2xl h-[90%] w-[85%] flex text-3xl scrollbar-hidden">
@@ -26,11 +26,11 @@ const DynamicTable = ({ items, onDelete }) => {
                 {item?.quantity || ""}
               </td>
               <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-[#B8B8B8] border-b-2">
-                {item?.ref.description || ""}
+                {item?.description || ""}
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-[#B8B8B8] border-b-2">
                 <div className="flex justify-center">
-                  {item?.ref.description && (
+                  {item?.description && (
                     <IoIosClose className="size-12 opacity-55 cursor-pointer hover:opacity-100" onClick={() => onDelete(index)}/>
                   )}
                 </div>
