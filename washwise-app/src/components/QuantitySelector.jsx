@@ -2,38 +2,42 @@ import React, { useState, useEffect, forwardRef } from "react";
 import { BiMinus, BiPlus } from "react-icons/bi";
 
 const QuantitySelector = forwardRef(({ clearInputTrigger, onQuantityChange, refSearchRef, onClick }, ref) => {
-  const [localQuantity, setLocalQuantity] = useState("1");
+  const [localQuantity, setLocalQuantity] = useState("1"); //quantidade do componente
 
+  //quando algo e adicionado coloca quantidade a 1
   useEffect(() => {
     if (clearInputTrigger) {
       setLocalQuantity("1");
     }
   }, [clearInputTrigger]);
 
+  //diminui quantidade no componente e envia para o pai 
   const decreaseQuantity = () => {
     const newValue = parseInt(localQuantity) > 1 ? (parseInt(localQuantity) - 1).toString() : "1";
     setLocalQuantity(newValue);
-    onQuantityChange(newValue); // Envia o novo valor ao componente pai
+    onQuantityChange(newValue);
   };
 
+  //aumenta quantidade no componente e envia para o pai 
   const increaseQuantity = () => {
     const newValue = (parseInt(localQuantity || "1", 10) + 1).toString();
     setLocalQuantity(newValue);
-    onQuantityChange(newValue); // Envia o novo valor ao componente pai
+    onQuantityChange(newValue);
   };
+
 
   const handleChange = (e) => {
     const value = e.target.value;
     if (value === "" || /^[0-9]+$/.test(value)) {
       setLocalQuantity(value);
-      onQuantityChange(value); // Envia o novo valor ao componente pai
+      onQuantityChange(value);
     }
   };
 
   const handleBlur = () => {
     if (localQuantity === "" || parseInt(localQuantity) < 1) {
       setLocalQuantity("1");
-      onQuantityChange("1"); // Envia o valor mínimo para o componente pai
+      onQuantityChange("1");
     }
   };
 
@@ -51,7 +55,7 @@ const QuantitySelector = forwardRef(({ clearInputTrigger, onQuantityChange, refS
     } else if (e.key === "Enter") {
       e.preventDefault();
       onClick();
-      refSearchRef.current?.focus();
+      refSearchRef.current?.focus(); //foca na ref
     }
   };
 

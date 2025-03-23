@@ -14,8 +14,6 @@ import { GiClothesline } from "react-icons/gi";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//todo melhorar a passagem de informacao entre componentes, so o essencial.
-
 function App() {
   const [activeTab, setActiveTab] = useState("talão"); //Estado da Tab
   const [client, setClient] = useState([]); //Estado cliente selecionado
@@ -45,6 +43,7 @@ function App() {
 
   //atualiza cliente
   const getClient = (newClient) => {
+    console.log(newClient);
     setClient(newClient);
   }
 
@@ -69,6 +68,7 @@ function App() {
         autoClose: 3000,
         className: "custom-warn-toast",
         progressClassName: "custom-warn-progress",
+        toastId: "alerta-peça"
       });
     }
   };

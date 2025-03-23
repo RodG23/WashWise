@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 
 const CheckboxSelector = ({ onCheckboxChange }) => {
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(""); //estado de seleçao 
 
   const options = ["2ª", "3ª", "4ª", "5ª", "6ª", "Sº"];
 
+  //A cada mudança muda estado do componente e passa para o pai
   const handleChange = (option) => {
     setSelected(option);
     onCheckboxChange(option);
