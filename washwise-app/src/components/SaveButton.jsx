@@ -2,7 +2,7 @@ import React from "react";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const SaveButton = ({ client, items, checkbox }) => {
+const SaveButton = ({ onSave, client, items, checkbox }) => {
   
   const handleSave = async () => {
     if (!client.id) {
@@ -11,6 +11,7 @@ const SaveButton = ({ client, items, checkbox }) => {
               autoClose: 3000,
               className: "custom-warn-toast",
               progressClassName: "custom-warn-progress",
+              toastId: "alerta-cliente",
             });
       return;
     }
@@ -20,6 +21,7 @@ const SaveButton = ({ client, items, checkbox }) => {
               autoClose: 3000,
               className: "custom-warn-toast",
               progressClassName: "custom-warn-progress",
+              toastId: "alerta-peças",
             });
       return;
     }
@@ -29,6 +31,7 @@ const SaveButton = ({ client, items, checkbox }) => {
               autoClose: 3000,
               className: "custom-warn-toast",
               progressClassName: "custom-warn-progress",
+              toastId: "alerta-dia",
             });
       return;
     }
@@ -42,9 +45,14 @@ const SaveButton = ({ client, items, checkbox }) => {
 
     const response = await window.api.saveReceipt(receipt);
     if (response.success) {
-      toast.success("Talão criado com sucesso!");
+      toast.success("Talão criado com sucesso!" ,{
+        toastId: "save-success",
+      });
+      onSave();
     } else {
-      toast.error("Erro ao criar talão.");
+      toast.error("Erro ao criar talão.", {
+        toastId: "error-save",
+      });
       //toast.error("Erro ao criar talão. " + response.error);
     }
   };

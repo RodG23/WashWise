@@ -1,17 +1,24 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 
 //todo nao permitir clientes que nao existam, fazer verificação ao guardar talao
 
 //Passagem para app do nome e id de cliente
 //Get de clientes sem number, não é necessário
-const ClientSearch = ({ onClientChange, refSearchRef }) => {
+const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
   const [result, setResult] = useState([]); //lista de pesquisa
   const [input, setInput] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0); //indice selecionado
 
   const inputRef = useRef(null); //refereencia para input
   const itemRefs = useRef([]); //lista de pesquisa mostrada
+
+  useEffect(() => {
+      if (saveTrigger) {
+        setInput("");
+        setResult([]);
+      }
+    }, [saveTrigger]);
 
   //filtrar pesquisa
   const filterClients = (value) => {

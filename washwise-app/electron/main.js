@@ -4,7 +4,6 @@ import { fileURLToPath } from "url";
 import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 
-//todo adicionar aos recibos data de criacao e usar essa data para meter no talao, nao fazer uma nova
 //todo refresh dos render ao guardar talao fazer isso na resposta do sucesso, deve ser simples (limpar check, cliente e tabela)
 
 const __filename = fileURLToPath(import.meta.url);

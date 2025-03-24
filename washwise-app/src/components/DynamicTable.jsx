@@ -1,7 +1,7 @@
 import React from "react";
 import { IoIosClose } from "react-icons/io";
 
-const DynamicTable = ({ items, onDelete }) => {
+const DynamicTable = ({ saveTrigger, items, onDelete }) => {
   const numberOfItemsToRender = 10; //maximo que mostra na tabela antes de scroll
 
   const itemsWithEmptyRows = [

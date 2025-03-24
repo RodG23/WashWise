@@ -1,9 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const CheckboxSelector = ({ onCheckboxChange }) => {
+const CheckboxSelector = ({ saveTrigger, onCheckboxChange }) => {
   const [selected, setSelected] = useState(""); //estado de seleçao 
 
   const options = ["2ª", "3ª", "4ª", "5ª", "6ª", "Sº"];
+
+  useEffect(() => {
+      if (saveTrigger) {
+        setSelected("");
+      }
+    }, [saveTrigger]);
 
   //A cada mudança muda estado do componente e passa para o pai
   const handleChange = (option) => {
