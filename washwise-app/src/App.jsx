@@ -22,6 +22,7 @@ function App() {
   const [checkbox, setCheckbox] = useState(""); //Estado dia levantamento
   const [items, setItems] = useState([]); //Estado itens talão
   const [clearInputTrigger, setClearInputTrigger] = useState(1); //Atualizando limpa input
+  const [saveTrigger, setSaveTrigger] = useState(1); //Atualizando limpa input
   const refSearchRef = useRef(null); //Ref para input de peça
   const quantityInputRef = useRef(null); //Ref para quantidade de peça
 
@@ -43,7 +44,6 @@ function App() {
 
   //atualiza cliente
   const getClient = (newClient) => {
-    console.log(newClient);
     setClient(newClient);
   }
 
@@ -56,7 +56,6 @@ function App() {
   const addItem = () => {
     if (ref && quantity) {
       const newItem = { ...ref, quantity };
-      console.log(newItem);
       setItems((prevItems) => [...prevItems, newItem]);
       setRef("");
       setQuantity("1");
@@ -72,6 +71,13 @@ function App() {
       });
     }
   };
+
+  const saveReceipt = () => {
+    setSaveTrigger((prev) => prev + 1);
+    setClient([]);
+    setCheckbox("");
+    setItems([]);
+  }
 
   //retira item talao
   const deleteItem = (index) => {
@@ -107,7 +113,7 @@ function App() {
               <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
                 <p>Cliente:</p>
               </div>
-              <ClientSearch onClientChange={getClient} refSearchRef={refSearchRef}/>
+              <ClientSearch saveTrigger={saveTrigger} onClientChange={getClient} refSearchRef={refSearchRef}/>
             </div>
             <div className="grid grid-cols-2 justify-start items-center col-span-2 row-start-1 bg-[#E1E4F1]">
               <div className="h-full ml-1 flex-col flex justify-center">
@@ -132,13 +138,13 @@ function App() {
               <DynamicTable items={items} onDelete={deleteItem}/>
             </div>
             <div className="row-span-2 col-start-3 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
-              <CheckboxSelector onCheckboxChange={getCheckbox}/>
+              <CheckboxSelector saveTrigger={saveTrigger} onCheckboxChange={getCheckbox}/>
             </div>
             <div className="col-start-3 row-start-4 bg-[#E1E4F1] flex justify-center items-center">
-              <SaveButton client={client} items={items} checkbox={checkbox}/>
+              <SaveButton onSave={saveReceipt} client={client} items={items} checkbox={checkbox}/>
             </div>
             <div className="col-start-3 row-start-5 bg-[#E1E4F1] flex justify-center items-start">
-              <SavePrintButton client={client} items={items} checkbox={checkbox}/>
+              <SavePrintButton onSave={saveReceipt} client={client} items={items} checkbox={checkbox}/>
             </div>
           </div>
           </>}

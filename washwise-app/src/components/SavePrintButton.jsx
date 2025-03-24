@@ -2,7 +2,7 @@ import React from "react";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const SavePrintButton = ({ client, items, checkbox }) => {
+const SavePrintButton = ({ onSave, client, items, checkbox }) => {
 
   const handleSaveAndPrint = async () => {
     if (!client.id) {
@@ -11,6 +11,7 @@ const SavePrintButton = ({ client, items, checkbox }) => {
               autoClose: 3000,
               className: "custom-warn-toast",
               progressClassName: "custom-warn-progress",
+              toastId: "alerta-cliente",
             });
       return;
     }
@@ -20,6 +21,7 @@ const SavePrintButton = ({ client, items, checkbox }) => {
               autoClose: 3000,
               className: "custom-warn-toast",
               progressClassName: "custom-warn-progress",
+              toastId: "alerta-peças",
             });
       return;
     }
@@ -29,6 +31,7 @@ const SavePrintButton = ({ client, items, checkbox }) => {
               autoClose: 3000,
               className: "custom-warn-toast",
               progressClassName: "custom-warn-progress",
+              toastId: "alerta-dia",
             });
       return;
     }
@@ -43,9 +46,14 @@ const SavePrintButton = ({ client, items, checkbox }) => {
 
     const response = await window.api.saveReceipt(receipt);
     if (response.success) {
-      toast.success("Talão criado com sucesso!");
+      toast.success("Talão criado com sucesso!", {
+        toastId: "save-success",
+      });
+      onSave();
     } else {
-      toast.error("Erro ao criar talão.");
+      toast.error("Erro ao criar talão.", {
+              toastId: "error-save",
+      });
       //toast.error("Erro ao criar talão. " + response.error);
     }
   };
