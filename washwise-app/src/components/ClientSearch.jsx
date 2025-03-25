@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { BiSearchAlt } from "react-icons/bi";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-//todo nao permitir clientes que nao existam, fazer verificação ao guardar talao
+//todo nao permitir clientes que nao existam, fazer verificação ao guardar talao (acho que esta)
 
 //Passagem para app do nome e id de cliente
 //Get de clientes sem number, não é necessário
@@ -40,6 +42,23 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
     });
   };
 
+  const handleBlur = () => {
+    if (result.length == 0) {
+      toast.warn("Cliente não existe.", {
+        position: "top-right",
+        autoClose: 3000,
+        className: "custom-warn-toast",
+        progressClassName: "custom-warn-progress",
+      });
+      setInput("");
+      onClientChange([]);
+    }
+  };
+
+  const handleFocus = () => {
+    filterClients(input);
+  };
+
   //lida com mudança no input
   const handleChange = (value) => {
     setInput(value);
@@ -52,7 +71,7 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
     setInput(cli.name);
     onClientChange({ name: cli.name, id: cli.id });
     setResult([]);
-    inputRef.current?.blur();
+    //inputRef.current?.blur();
     refSearchRef.current?.focus();
   };
 
@@ -61,6 +80,22 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
       setResult([]);
       inputRef.current.blur();
     }
+
+    if (e.key === "Enter") {
+      if (result.length !== 0) {
+        handleItemClick(result[selectedIndex]);
+      }
+      else {
+        toast.warn("Cliente não existe.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "custom-warn-toast",
+          progressClassName: "custom-warn-progress",
+        });
+        setInput("");
+        onClientChange([]);
+      }
+    } 
 
     if (result.length === 0) return;
 
@@ -77,8 +112,6 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
         scrollToItem(newIndex);
         return newIndex;
       });
-    } else if (e.key === "Enter" && selectedIndex >= 0) {
-      handleItemClick(result[selectedIndex]);
     } 
   };
 
@@ -103,6 +136,8 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
           value={input}
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
         />
       </div>
 
