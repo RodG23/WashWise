@@ -16,11 +16,11 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
   const itemRefs = useRef([]); //lista de pesquisa mostrada
 
   useEffect(() => {
-      if (saveTrigger) {
-        setInput("");
-        setResult([]);
-      }
-    }, [saveTrigger]);
+    if (saveTrigger) {
+      setInput("");
+      setResult([]);
+    }
+  }, [saveTrigger]);
 
   //filtrar pesquisa
   const filterClients = (value) => {
@@ -84,8 +84,7 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
     if (e.key === "Enter") {
       if (result.length !== 0) {
         handleItemClick(result[selectedIndex]);
-      }
-      else {
+      } else {
         toast.warn("Cliente não existe.", {
           position: "top-right",
           autoClose: 3000,
@@ -95,7 +94,7 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
         setInput("");
         onClientChange([]);
       }
-    } 
+    }
 
     if (result.length === 0) return;
 
@@ -112,7 +111,7 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
         scrollToItem(newIndex);
         return newIndex;
       });
-    } 
+    }
   };
 
   const scrollToItem = (index) => {
@@ -155,7 +154,9 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
                   }`}
                 onClick={() => handleItemClick(res)}
               >
-                <span>{res.name} {"("}</span>
+                <span>
+                  {res.name} {"("}
+                </span>
                 <span className="opacity-50">{res.address}</span>
                 <span>{")"}</span>
               </div>
