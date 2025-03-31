@@ -40,7 +40,6 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
 
   //lida com mudança de input
   const handleChange = (value) => {
-    onRefChange(value);
     setInput(value);
     filterRefs(value);
     setSelectedIndex(0);
