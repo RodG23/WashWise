@@ -44,7 +44,7 @@ function App() {
 
   //atualiza cliente
   const getClient = (newClient) => {
-    console.log(newClient);
+    //console.log(newClient);
     setClient(newClient);
   }
 

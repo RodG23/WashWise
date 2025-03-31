@@ -3,8 +3,6 @@ import { BiSearchAlt } from "react-icons/bi";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//todo nao permitir clientes que nao existam, fazer verificação ao guardar talao (acho que esta)
-
 //Passagem para app do nome e id de cliente
 //Get de clientes sem number, não é necessário
 const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
