@@ -1,6 +1,8 @@
 import React from "react";
 import { IoIosClose } from "react-icons/io";
 
+//todo ajustar o tamanho da linha para ficar sempre igual, se se mantiverem os 83 px no pc em casa
+
 const DynamicTable = ({ items, onDelete }) => {
   const numberOfItemsToRender = 10; //maximo que mostra na tabela antes de scroll
 
@@ -26,7 +28,7 @@ const DynamicTable = ({ items, onDelete }) => {
                 {item?.quantity || ""}
               </td>
               <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-[#B8B8B8] border-b-2">
-                {item?.description || ""}
+                {item?.description || "\u00A0"}
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-[#B8B8B8] border-b-2">
                 <div className="flex justify-center">
