@@ -49,6 +49,7 @@ async function saveReceipt(receipt) {
       receipt.date,
       createdAt
     );
+    //console.log(receipt.products);
 
     return { success: true, receipt_id: info.lastInsertRowid, client_id: receipt.client_id };
   } catch (error) {
