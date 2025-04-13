@@ -35,12 +35,16 @@ const SaveButton = ({ onSave, client, items, checkbox }) => {
             });
       return;
     }
+    var check = checkbox;
+    if (checkbox == "Sº") {
+      check = "Sab"
+    }
     const receipt = {
       client_id: client.id,
       products: items,
       state: "pendente",
       total_price: items.reduce((total, item) => total + item.price * item.quantity, 0),
-      date: checkbox
+      date: check
     };
 
     const response = await window.api.saveReceipt(receipt);

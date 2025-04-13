@@ -60,6 +60,7 @@ async function saveReceipt(receipt) {
 
 
 async function printReceipt(receipt) {
+  console.log("here");
   try {
     const printer = new ThermalPrinter({
       type: PrinterTypes.EPSON, // 'star' or 'epson'
@@ -85,7 +86,7 @@ async function printReceipt(receipt) {
     // Cabeçalho - Logo e informações
     printer.alignLeft();
     printer.bold(true);
-    printer.leftRight("Lavandaria 3 Marias", `ID: ${receipt.receipt_id}`);
+    printer.leftRight("Lavandaria 3 Marias", `Nº: ${receipt.receipt_id}`);
     printer.bold(false);
     // Mantém negrito para morada e telefone
     printer.println("Av. 25 de Abril, 241");
@@ -152,6 +153,29 @@ async function printReceipt(receipt) {
     printer.println('└' + ''.padEnd(col1Width - 2, '─') + '┴' + ''.padEnd(col2Width - 2, '─') + '┘');
 
     printer.newLine();
+
+    //Notas
+    // Notas (caso existam)
+    const notasComTexto = receipt.products
+    .map((peca) => ({ description: peca.description, note: peca.note?.trim() }))
+    .filter((peca) => peca.note && peca.note.length > 0);
+
+    if (notasComTexto.length > 0) {
+    printer.alignLeft();
+    printer.bold(true);
+    printer.println("Obs:");
+    printer.bold(false);
+
+    notasComTexto.forEach((peca) => {
+      // Se a nota for muito longa, corta e adiciona "..."
+      let nota = peca.note;
+
+      printer.println(`- ${peca.description}: ${nota}`);
+    });
+
+    printer.newLine();
+    }
+
 
     // Informações de levantamento
     printer.alignLeft();
