@@ -6,8 +6,11 @@ import QuantitySelector from "./components/QuantitySelector";
 import AddButton from "./components/AddButton";
 import DynamicTable from "./components/DynamicTable";
 import CheckboxSelector from "./components/CheckboxSelector";
-import SaveButton from "./components/SaveButton"
-import SavePrintButton from "./components/SavePrintButton"
+import SaveButton from "./components/SaveButton";
+import SavePrintButton from "./components/SavePrintButton";
+import ClientFilters from './components/ClientFilters';
+import ClientTable from './components/ClientTable';
+import ClientForm from './components/ClientForm';
 import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
 import { GiClothesline } from "react-icons/gi";
@@ -115,7 +118,14 @@ function App() {
           ))}
         </div>
         <div className="h-[90%] bg-[#E1E4F1]">
-          {activeTab === "clientes" && <div className="p-4">Clientes</div>}
+          {activeTab === "clientes" && 
+          <>
+            <div className="h-full grid grid-cols-3 grid-rows-5">
+            <div className="row-start-1 col-span-3 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
+              <ClientFilters/>
+            </div>
+          </div>
+          </>}
           {activeTab === "talão" && 
           <>
             <div className="h-full grid grid-cols-3 grid-rows-5">
