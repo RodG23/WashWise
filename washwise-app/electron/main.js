@@ -211,6 +211,28 @@ ipcMain.handle("get-clientes-search", () => {
   return db.prepare("SELECT id, name, address FROM clients").all();
 });
 
+ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
+  const query = "SELECT id, name, address FROM clients WHERE name LIKE ?";
+  return db.prepare(query).all(`%${searchTerm}%`);
+});
+
+ipcMain.handle("get-clientes-search-receipt", (event, searchTerm) => {
+  
+  const query = `
+    SELECT 
+      c.id AS client_id,
+      c.name,
+      c.address
+    FROM receipts r
+    JOIN clients c ON r.client_id = c.id
+    WHERE r.id = ?;
+  `;
+  
+  return db.prepare(query).all(searchTerm);
+});
+
+
+
 ipcMain.handle("get-refs", () => {
   return db.prepare("SELECT * FROM products").all();
 });
