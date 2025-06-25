@@ -1,29 +1,112 @@
-import React from 'react';
+import React, { useState } from "react";
+import { TbUserEdit } from "react-icons/tb";
+import { AiTwotoneDelete } from "react-icons/ai";
 
-const ClientTable = ({ clients, onSelectClient }) => {
+//todo tratamento de erros
+
+const ClientTable = ({ filteredClients, updateFilteredClients }) => {
+  const numberOfClientsToRender = 8;
+
+  // Preenche com linhas vazias caso haja menos clientes que o número desejado
+  const clientsWithEmptyRows = [
+    ...filteredClients,
+    ...Array(Math.max(0, numberOfClientsToRender - filteredClients.length)).fill(null),
+  ];
+
+  const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false); // Controla se a exclusão foi confirmada
+  const [clientToDelete, setClientToDelete] = useState(null); // Armazena o cliente que está marcado para exclusão
+  const [timeoutID, setTimeoutID] = useState(null); // Armazena o ID do timeout para a exclusão
+
+  const handleDeleteClick = (client) => {
+    if (clientToDelete && clientToDelete.id === client.id && isDeleteConfirmed) {
+      // Se o cliente já estiver confirmado para exclusão, realiza a exclusão
+      window.api.removeClient(client.id)  // Chama a função de remoção de cliente no backend (main process)
+        .then(response => {
+          if (response.success) {
+            console.log(response.message); // Exibe a mensagem de sucesso
+            updateFilteredClients((prevClients) => prevClients.filter((item) => item.id !== client.id));
+          } else {
+            console.error(response.message); // Exibe o erro retornado
+            //alert(`Erro: ${response.message}`); // Exibe o erro na interface do usuário
+          }
+        })
+        .catch(error => {
+          // Captura qualquer erro adicional (se ocorrer no frontend)
+          //console.error("Erro ao remover cliente:", error);
+          //alert("Ocorreu um erro inesperado ao tentar excluir o cliente.");
+      });      
+      setIsDeleteConfirmed(false); // Reseta o estado após a exclusão
+      setClientToDelete(null); // Reseta o cliente a ser excluído
+    } else {
+      // Primeiro clique para confirmar
+      setIsDeleteConfirmed(true);
+      setClientToDelete(client);
+
+      // Se já havia um timeout limpa
+      if (timeoutID) clearTimeout(timeoutID);
+
+      // Cria um novo timeout de 3s
+      const id = setTimeout(() => {
+        setIsDeleteConfirmed(false);
+        setClientToDelete(null);
+      }, 3000);
+
+      setTimeoutID(id); // Armazena o ID do timeout
+    }
+  };
+
   return (
-    <table className="w-full">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Número</th>
-          <th>Talão</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {clients.map((client) => (
-          <tr key={client.id}>
-            <td>{client.name}</td>
-            <td>{client.number}</td>
-            <td>{client.receipt}</td>
-            <td>
-              <button onClick={() => onSelectClient(client)}>Editar</button>
-            </td>
+    <div className="overflow-auto rounded-2xl h-[90%] w-[85%] flex text-3xl scrollbar-hidden">
+      <table className="w-full h-full">
+        <thead>
+          <tr className="bg-[#D9D9D9] sticky top-0 z-10">
+            <th className="w-1/3 p-2 font-normal text-left border-r-4 border-b-4 border-[#B8B8B8] pt-5 pb-5">
+              Nome
+            </th>
+            <th className="w-1/3 p-2 font-normal text-left border-r-0 border-b-4 border-[#B8B8B8] pl-5">
+              Endereço
+            </th>
+            <th className="w-1/6 p-2 text-center border-b-4 border-[#B8B8B8]">
+            </th>
+            <th className="w-1/6 p-2 text-center border-b-4 border-[#B8B8B8]">
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {clientsWithEmptyRows.map((client, index) => (
+            <tr key={index}>
+              <td className="p-2 text-3xl text-left font-normal border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%]">
+                {client?.name || ""}
+              </td>
+              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
+                {client?.address || ""}
+              </td>
+              <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
+                <div className="flex justify-end">
+                  {client && (
+                    <TbUserEdit
+                      className="size-10 opacity-55 cursor-pointer hover:opacity-100"
+                      //onClick={() => onDelete(index)} // Chamando a função de apagar
+                    />
+                  )}
+                </div>
+              </td>
+              <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
+                <div className="flex justify-center">
+                  {client && (
+                    <AiTwotoneDelete
+                      className={`size-10 opacity-55 cursor-pointer hover:opacity-100
+                        ${clientToDelete && clientToDelete.id === client.id && isDeleteConfirmed ? "text-red-500" : "text-black"}`}
+                      onClick={() => handleDeleteClick(client)}
+                    />
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 
