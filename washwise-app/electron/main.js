@@ -4,8 +4,6 @@ import { fileURLToPath } from "url";
 import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 
-//todo refresh dos render ao guardar talao fazer isso na resposta do sucesso, deve ser simples (limpar check, cliente e tabela)
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -231,7 +229,17 @@ ipcMain.handle("get-clientes-search-receipt", (event, searchTerm) => {
   return db.prepare(query).all(searchTerm);
 });
 
+ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
 
+  const query = `
+    SELECT 
+      id, name, address, number
+    FROM clients
+    WHERE number LIKE ?;
+  `;
+
+  return db.prepare(query).all(`${searchTerm}%`);;
+});
 
 ipcMain.handle("get-refs", () => {
   return db.prepare("SELECT * FROM products").all();
@@ -251,4 +259,28 @@ ipcMain.handle("add-cliente", (event, cliente) => {
 const stmt = db.prepare("INSERT INTO clients (nome, numero, morada) VALUES (?, ?, ?)");
 stmt.run(cliente.nome, cliente.numero, cliente.morada);
 return { success: true };
+});
+
+ipcMain.handle("remove-client", async (event, clientId) => {
+  try {
+    // nao elimina se tiver taloes
+    const checkClientInReceipts = db.prepare("SELECT COUNT(*) AS count FROM receipts WHERE client_id = ?").get(clientId);
+    
+    if (checkClientInReceipts.count > 0) {
+      return { success: false, message: "Tem talão" };
+    }
+
+    // Remove o cliente da tabela de clientes
+    const removeClientQuery = db.prepare("DELETE FROM clients WHERE id = ?");
+    const result = removeClientQuery.run(clientId);
+
+    // Verifica se a exclusão foi bem-sucedida
+    if (result.changes > 0) {
+      return { success: true, message: "Cliente excluído com sucesso!" };
+    } else {
+      return { success: false, message: "Cliente não encontrado." };
+    }
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 });

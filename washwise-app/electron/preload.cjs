@@ -9,4 +9,6 @@ contextBridge.exposeInMainWorld("api", {
     saveAndPrintReceipt: (receipt) => ipcRenderer.invoke("save-print-receipt", receipt),
     getClientesSearchName: (searchTerm) => ipcRenderer.invoke("get-clientes-search-name", searchTerm),
     getClientesSearchReceipt: (searchTerm) => ipcRenderer.invoke("get-clientes-search-receipt", searchTerm),
+    getClientesSearchNumber: (searchTerm) => ipcRenderer.invoke("get-clientes-search-number", searchTerm),
+    removeClient: (clientId) => ipcRenderer.invoke("remove-client", clientId),
   });

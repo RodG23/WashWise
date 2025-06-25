@@ -19,6 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 
 function App() {
+  //aba novo talao
   const [activeTab, setActiveTab] = useState("talão"); //Estado da Tab
   const [client, setClient] = useState([]); //Estado cliente selecionado
   const [ref, setRef] = useState(""); //Estado referencia peça
@@ -30,12 +31,18 @@ function App() {
   const refSearchRef = useRef(null); //Ref para input de peça
   const quantityInputRef = useRef(null); //Ref para quantidade de peça
 
+  //aba clientes
+  const [filteredClients, setFilteredClients] = useState([]);  // Estado para armazenar os clientes filtrados
+
+
+
   const tabs = [
     { name: "Novo Talão", icon: <TfiReceipt size={30} />, id: "talão" },
     { name: "Clientes", icon: <LuUsersRound size={30} />, id: "clientes" },
     { name: "Peças", icon: <GiClothesline size={30}/>, id: "peças" },
   ];
 
+  //aba novo talao
   //atualiza ref peça
   const getRef = (newRef) => {
     setRef(newRef);
@@ -98,6 +105,14 @@ function App() {
     updatedItems.splice(index, 1);
     setItems(updatedItems);
   };
+
+
+
+  //aba clientes
+  // Função para atualizar os clientes filtrados no clientfilters
+  const updateFilteredClients = (clients) => {
+    setFilteredClients(clients);
+  };
   
   //app
   return (
@@ -122,7 +137,10 @@ function App() {
           <>
             <div className="h-full grid grid-cols-3 grid-rows-5">
             <div className="row-start-1 col-span-3 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
-              <ClientFilters/>
+              <ClientFilters updateFilteredClients={updateFilteredClients}/>
+            </div>
+            <div className="col-span-2 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
+              <ClientTable filteredClients={filteredClients} updateFilteredClients={updateFilteredClients}/>
             </div>
           </div>
           </>}
