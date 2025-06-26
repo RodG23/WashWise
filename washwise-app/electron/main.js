@@ -210,7 +210,7 @@ ipcMain.handle("get-clientes-search", () => {
 });
 
 ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
-  const query = "SELECT id, name, address FROM clients WHERE name LIKE ?";
+  const query = "SELECT id, name, number, address FROM clients WHERE name LIKE ?";
   return db.prepare(query).all(`%${searchTerm}%`);
 });
 
@@ -218,8 +218,9 @@ ipcMain.handle("get-clientes-search-receipt", (event, searchTerm) => {
   
   const query = `
     SELECT 
-      c.id AS client_id,
+      c.id,
       c.name,
+      c.number,
       c.address
     FROM receipts r
     JOIN clients c ON r.client_id = c.id
@@ -256,9 +257,19 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
 });
   
 ipcMain.handle("add-cliente", (event, cliente) => {
-const stmt = db.prepare("INSERT INTO clients (nome, numero, morada) VALUES (?, ?, ?)");
-stmt.run(cliente.nome, cliente.numero, cliente.morada);
-return { success: true };
+  if (!cliente.name || !cliente.number || !cliente.address) {
+    return { success: false, message: "Todos os campos (nome, número, endereço) são obrigatórios." };
+  }
+
+  try {
+    const stmt = db.prepare("INSERT INTO clients (name, number, address) VALUES (?, ?, ?)");
+    stmt.run(cliente.name, cliente.number, cliente.address);
+
+    return { success: true, message: "Cliente adicionado com sucesso!" };
+  } catch (error) {
+    console.error("Erro ao adicionar cliente:", error);
+    return { success: false, message: "Erro ao adicionar o cliente." };
+  }
 });
 
 ipcMain.handle("remove-client", async (event, clientId) => {
@@ -282,5 +293,27 @@ ipcMain.handle("remove-client", async (event, clientId) => {
     }
   } catch (error) {
     return { success: false, message: error.message };
+  }
+});
+
+ipcMain.handle("edit-client", async (event, client) => {
+  const { id, name, number, address } = client;
+
+  try {
+    const query = `
+      UPDATE clients
+      SET name = ?, number = ?, address = ?
+      WHERE id = ?
+    `;
+    const result =db.prepare(query).run(name, number, address, id); // Passando os dados para o UPDATE
+    
+    if (result.changes > 0) {
+      return { success: true, message: "Cliente atualizado com sucesso!" };
+    } else {
+      return { success: false, message: "Cliente não encontrado." };
+    }
+  } catch (error) {
+    console.error("Erro ao editar cliente:", error);
+    return { success: false, message: "Ocorreu um erro inesperado." };
   }
 });

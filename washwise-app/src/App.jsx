@@ -32,7 +32,8 @@ function App() {
   const quantityInputRef = useRef(null); //Ref para quantidade de peça
 
   //aba clientes
-  const [filteredClients, setFilteredClients] = useState([]);  // Estado para armazenar os clientes filtrados
+  const [filteredClients, setFilteredClients] = useState([]); // Estado para armazenar os clientes filtrados
+  const [selectedClientEdit, setSelectedClientEdit] = useState(null); // Estado para guardar o cliente selecionado para editar
 
 
 
@@ -113,6 +114,21 @@ function App() {
   const updateFilteredClients = (clients) => {
     setFilteredClients(clients);
   };
+
+  const handleNewClient = () => {
+  setSelectedClientEdit(null); // Limpa o cliente selecionado, indo para o estado de "Novo Cliente"
+  };
+
+  const handleClientSelectForEdit = (client) => {
+    // Se o cliente for clicado e já estiver selecionado, desmarca a seleção
+    if (selectedClientEdit && selectedClientEdit.id === client.id) {
+      handleNewClient();
+    } else {
+      // Seleciona o novo cliente para edição
+      setSelectedClientEdit(client);
+    }
+  };
+
   
   //app
   return (
@@ -140,7 +156,10 @@ function App() {
               <ClientFilters updateFilteredClients={updateFilteredClients}/>
             </div>
             <div className="col-span-2 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
-              <ClientTable filteredClients={filteredClients} updateFilteredClients={updateFilteredClients}/>
+              <ClientTable filteredClients={filteredClients} updateFilteredClients={updateFilteredClients} selectedClientId={selectedClientEdit?.id} onClientSelect={handleClientSelectForEdit}/>
+            </div>
+            <div className="col-start-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center overflow-clip">
+              <ClientForm selectedClientEdit={selectedClientEdit} isEditing={selectedClientEdit !== null} handleNewClient={handleNewClient} updateFilteredClients={updateFilteredClients}/>
             </div>
           </div>
           </>}

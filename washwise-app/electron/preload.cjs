@@ -11,4 +11,5 @@ contextBridge.exposeInMainWorld("api", {
     getClientesSearchReceipt: (searchTerm) => ipcRenderer.invoke("get-clientes-search-receipt", searchTerm),
     getClientesSearchNumber: (searchTerm) => ipcRenderer.invoke("get-clientes-search-number", searchTerm),
     removeClient: (clientId) => ipcRenderer.invoke("remove-client", clientId),
+    editClient: (client) => ipcRenderer.invoke("edit-client", client),
   });
