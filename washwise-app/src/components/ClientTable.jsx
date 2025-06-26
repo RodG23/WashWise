@@ -4,7 +4,7 @@ import { AiTwotoneDelete } from "react-icons/ai";
 
 //todo tratamento de erros
 
-const ClientTable = ({ filteredClients, updateFilteredClients }) => {
+const ClientTable = ({ filteredClients, updateFilteredClients, selectedClientId, onClientSelect }) => {
   const numberOfClientsToRender = 8;
 
   // Preenche com linhas vazias caso haja menos clientes que o número desejado
@@ -60,7 +60,7 @@ const ClientTable = ({ filteredClients, updateFilteredClients }) => {
       <table className="w-full h-full">
         <thead>
           <tr className="bg-[#D9D9D9] sticky top-0 z-10">
-            <th className="w-1/3 p-2 font-normal text-left border-r-4 border-b-4 border-[#B8B8B8] pt-5 pb-5">
+            <th className="w-1/3 p-2 font-normal text-left border-r-4 border-b-4 border-[#B8B8B8] pt-5 pb-5 pl-5">
               Nome
             </th>
             <th className="w-1/3 p-2 font-normal text-left border-r-0 border-b-4 border-[#B8B8B8] pl-5">
@@ -75,18 +75,18 @@ const ClientTable = ({ filteredClients, updateFilteredClients }) => {
         <tbody>
           {clientsWithEmptyRows.map((client, index) => (
             <tr key={index}>
-              <td className="p-2 text-3xl text-left font-normal border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%]">
+              <td className="p-2 pl-5 text-3xl text-left font-normal border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%] cursor-default">
                 {client?.name || ""}
               </td>
-              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
+              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
                 {client?.address || ""}
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
                 <div className="flex justify-end">
                   {client && (
                     <TbUserEdit
-                      className="size-10 opacity-55 cursor-pointer hover:opacity-100"
-                      //onClick={() => onDelete(index)} // Chamando a função de apagar
+                      className={`size-10 opacity-55 cursor-pointer hover:opacity-100 ${selectedClientId === client.id ? "text-blue-900 opacity-100" : "text-black"}`}
+                      onClick={() => onClientSelect(client)} // Chama a função de seleção
                     />
                   )}
                 </div>
@@ -96,7 +96,7 @@ const ClientTable = ({ filteredClients, updateFilteredClients }) => {
                   {client && (
                     <AiTwotoneDelete
                       className={`size-10 opacity-55 cursor-pointer hover:opacity-100
-                        ${clientToDelete && clientToDelete.id === client.id && isDeleteConfirmed ? "text-red-500" : "text-black"}`}
+                        ${clientToDelete && clientToDelete.id === client.id && isDeleteConfirmed ? "text-red-800 opacity-100" : "text-black"}`}
                       onClick={() => handleDeleteClick(client)}
                     />
                   )}

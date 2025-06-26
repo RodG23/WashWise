@@ -56,10 +56,10 @@ const DynamicTable = ({ items, onDelete, onNoteChange }) => {
         <tbody>
           {itemsWithEmptyRows.map((item, index) => (
             <tr key={index}>
-              <td className="p-2 text-3xl text-center font-semibold border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%]">
+              <td className="p-2 text-3xl text-center font-semibold border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%] cursor-default">
                 {item?.quantity || ""}
               </td>
-              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
+              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
                 {item?.description || ""}
               </td>
               <td className="p-2 pl-5 bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
