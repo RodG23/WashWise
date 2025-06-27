@@ -159,7 +159,7 @@ function App() {
               <ClientTable filteredClients={filteredClients} updateFilteredClients={updateFilteredClients} selectedClientId={selectedClientEdit?.id} onClientSelect={handleClientSelectForEdit}/>
             </div>
             <div className="col-start-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center overflow-clip">
-              <ClientForm selectedClientEdit={selectedClientEdit} isEditing={selectedClientEdit !== null} handleNewClient={handleNewClient} updateFilteredClients={updateFilteredClients}/>
+              <ClientForm selectedClientEdit={selectedClientEdit} isEditing={selectedClientEdit !== null} handleNewClient={handleNewClient} updateFilteredClients={updateFilteredClients} activeTab={activeTab}/>
             </div>
           </div>
           </>}

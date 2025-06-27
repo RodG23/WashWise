@@ -258,17 +258,17 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
   
 ipcMain.handle("add-cliente", (event, cliente) => {
   if (!cliente.name || !cliente.number || !cliente.address) {
-    return { success: false, message: "Todos os campos (nome, número, endereço) são obrigatórios." };
+    return { success: false, message: "Por favor, preencha todos os campos." };
   }
 
   try {
     const stmt = db.prepare("INSERT INTO clients (name, number, address) VALUES (?, ?, ?)");
     stmt.run(cliente.name, cliente.number, cliente.address);
 
-    return { success: true, message: "Cliente adicionado com sucesso!" };
+    return { success: true, message: "Cliente criado com sucesso!" };
   } catch (error) {
     console.error("Erro ao adicionar cliente:", error);
-    return { success: false, message: "Erro ao adicionar o cliente." };
+    return { success: false, message: "Erro ao criar cliente." };
   }
 });
 
@@ -278,7 +278,7 @@ ipcMain.handle("remove-client", async (event, clientId) => {
     const checkClientInReceipts = db.prepare("SELECT COUNT(*) AS count FROM receipts WHERE client_id = ?").get(clientId);
     
     if (checkClientInReceipts.count > 0) {
-      return { success: false, message: "Tem talão" };
+      return { success: false, message: "Cliente possui talões associados." };
     }
 
     // Remove o cliente da tabela de clientes
@@ -297,6 +297,10 @@ ipcMain.handle("remove-client", async (event, clientId) => {
 });
 
 ipcMain.handle("edit-client", async (event, client) => {
+  if (!client.name || !client.number || !client.address) {
+    return { success: false, message: "Por favor, preencha todos os campos." };
+  }
+
   const { id, name, number, address } = client;
 
   try {
