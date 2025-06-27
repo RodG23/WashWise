@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { BiSearchAlt } from "react-icons/bi";
 import { IoIosArrowDropdown } from "react-icons/io";
 
-//todo tratamento de erros
-
 // Função para filtrar os clientes
 const ClientFilters = ({ updateFilteredClients }) => {
   const [searchType, setSearchType] = useState("name"); // Tipo de filtro selecionado

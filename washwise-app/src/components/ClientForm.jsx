@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from "react";
-
-//todo tratamento de erros
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Componente de Formulário para Criação ou Edição de Cliente
-const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilteredClients  }) => {
+const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilteredClients, activeTab }) => {
   const [name, setName] = useState(selectedClientEdit?.name || "");
   const [id, setId] = useState(selectedClientEdit?.id || "");
   const [number, setNumber] = useState(selectedClientEdit?.number || "");
   const [address, setAddress] = useState(selectedClientEdit?.address || "");
   const [isNewClientActive, setIsNewClientActive] = useState(true); // Para controlar o estado dos botões
+
+  useEffect(() => {
+    if (activeTab !== "Clientes") {
+      handleNewClient();
+    }
+  }, [activeTab]);
 
   // Quando o cliente selecionado mudar, atualiza os campos do formulário
   useEffect(() => {
@@ -34,11 +40,19 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
       window.api.editClient(clientData)
         .then(response => {
           if (response.success) {
-            console.log(response.message);
+            toast.success(response.message ,{
+              toastId: "edit-client-success",
+            });
             updateFilteredClients(prevClients => prevClients.map(client => client.id === id ? { ...client, name, number, address } : client));
             handleNewClient(); // Limpa os dados do cliente após a edição
           } else {
-            console.error(response.message);
+            toast.warn(response.message, {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
+            handleNewClient(); // Limpa os dados do cliente após a edição
           }
         })
         .catch(error => {
@@ -48,13 +62,20 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
       window.api.addCliente(clientData)
         .then(response => {
           if (response.success) {
-            console.log(response.message);
+            toast.success(response.message ,{
+              toastId: "create-client-success",
+            });
           } else {
-            console.error(response.message);
+            toast.warn(response.message, {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
           }
         })
         .catch(error => {
-          console.error("Erro ao adicionar cliente:", error);
+          console.error("Erro ao criar cliente:", error);
         });
     }
     // Limpar campos após salvar

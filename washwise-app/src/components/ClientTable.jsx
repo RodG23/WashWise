@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { TbUserEdit } from "react-icons/tb";
 import { AiTwotoneDelete } from "react-icons/ai";
-
-//todo tratamento de erros
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ClientTable = ({ filteredClients, updateFilteredClients, selectedClientId, onClientSelect }) => {
   const numberOfClientsToRender = 8;
@@ -23,17 +23,21 @@ const ClientTable = ({ filteredClients, updateFilteredClients, selectedClientId,
       window.api.removeClient(client.id)  // Chama a função de remoção de cliente no backend (main process)
         .then(response => {
           if (response.success) {
-            console.log(response.message); // Exibe a mensagem de sucesso
+            toast.success(response.message,{
+                    toastId: "delete-client-success",
+                  });
             updateFilteredClients((prevClients) => prevClients.filter((item) => item.id !== client.id));
           } else {
-            console.error(response.message); // Exibe o erro retornado
-            //alert(`Erro: ${response.message}`); // Exibe o erro na interface do usuário
+            toast.warn(response.message, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "custom-warn-toast",
+                    progressClassName: "custom-warn-progress",
+                  });
           }
         })
         .catch(error => {
-          // Captura qualquer erro adicional (se ocorrer no frontend)
-          //console.error("Erro ao remover cliente:", error);
-          //alert("Ocorreu um erro inesperado ao tentar excluir o cliente.");
+          console.error("Erro ao remover cliente:", error);
       });      
       setIsDeleteConfirmed(false); // Reseta o estado após a exclusão
       setClientToDelete(null); // Reseta o cliente a ser excluído
