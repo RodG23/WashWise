@@ -2,13 +2,10 @@ import React, { useState, useEffect } from "react";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//todo verificar se valor gardado é inteiro
-//todo fazer funcao de editar e permitir alteração de ref, ver implicações
-//todo ver tratamento de erros, em principio deve estar a funcionar 
-
 // Componente de Formulário para Criação ou Edição de Cliente
 const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs, activeTab }) => {
   const [prodRef, setProdRef] = useState(selectedRefEdit?.ref || "");
+  const [oldProdRef, setOldProdRef] = useState(selectedRefEdit?.ref || "");
   const [type, setType] = useState(selectedRefEdit?.type || "");
   const [color, setColor] = useState(selectedRefEdit?.color || "");
   const [style, setStyle] = useState(selectedRefEdit?.style || "");
@@ -16,7 +13,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
   const [isNewRefActive, setIsNewRefActive] = useState(true); // Para controlar o estado dos botões
 
   useEffect(() => {
-    if (activeTab !== "peças") {
+    if (activeTab !== "Peças") {
       handleNewRef();
     }
   }, [activeTab]);
@@ -25,6 +22,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
   useEffect(() => {
     if (selectedRefEdit) {
       setProdRef(selectedRefEdit.ref);
+      setOldProdRef(selectedRefEdit.ref);
       setType(selectedRefEdit.type);
       setColor(selectedRefEdit.color);
       setStyle(selectedRefEdit?.style || "");
@@ -33,6 +31,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
     } else {
       // Limpar os campos se não houver peça selecionada (modo de criação)
       setProdRef("");
+      setOldProdRef("");
       setType("");
       setColor("");
       setStyle("");
@@ -43,7 +42,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
 
   const handleSave = () => {
     const description = `${type} ${color} ${style ? style : ''}`.trim()
-    const refData = { prodRef, type, color, style, description, price };
+    const refData = { prodRef, type, color, style, description, price, oldProdRef };
 
     if (isEditing) {
       window.api.editRef(refData)
@@ -52,7 +51,22 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
             toast.success(response.message ,{
               toastId: "edit-ref-success",
             });
-            updateFilteredRefs(prevRefs => prevRefs.map(ref => ref.ref === prodRef ? { ...type, color, style, description, price } : ref));
+            updateFilteredRefs(prevRefs => prevRefs.map(peca => {
+              if (peca.ref === oldProdRef) {
+                const updatedPeca = { 
+                  ...peca, 
+                  type, 
+                  color, 
+                  style, 
+                  description, 
+                  price,
+                  ref: prodRef
+                };
+
+                return updatedPeca;
+              }
+              return peca;
+            }));
             handleNewRef(); // Limpa os dados da peça após a edição
           } else {
             toast.warn(response.message, {
@@ -89,6 +103,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
     }
     // Limpar campos após salvar
     setProdRef("");
+    setOldProdRef("");
     setType("");
     setColor("");
     setStyle("");
@@ -100,6 +115,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
     // Limpar os campos quando clicar em "Nova peça"
     handleNewRef(); // Limpa a peça selecionada no App
     setProdRef("");
+    setOldProdRef("");
     setType("");
     setColor("");
     setStyle("");
@@ -132,7 +148,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
 
       <div className="space-y-5 w-[70%] mx-auto pt-4">
         <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
-          <p>Número:</p>
+          <p>Referência:</p>
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
@@ -140,7 +156,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
             value={prodRef}
             onChange={(e) => setProdRef(e.target.value)}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
-            placeholder="Número de peça"
+            placeholder="Referência de peça"
           />
         </div>
 
@@ -184,7 +200,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
         </div>
 
         <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
-          <p>Preço:</p>
+          <p>Valor:</p>
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
@@ -192,7 +208,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
-            placeholder="Preço de peça"
+            placeholder="Valor de peça"
           />
         </div>
 

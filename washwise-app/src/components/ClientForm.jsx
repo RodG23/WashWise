@@ -11,7 +11,7 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
   const [isNewClientActive, setIsNewClientActive] = useState(true); // Para controlar o estado dos botões
 
   useEffect(() => {
-    if (activeTab !== "clientes") {
+    if (activeTab !== "Clientes") {
       handleNewClient();
     }
   }, [activeTab]);

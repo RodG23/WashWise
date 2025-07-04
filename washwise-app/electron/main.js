@@ -58,7 +58,6 @@ async function saveReceipt(receipt) {
 
 
 async function printReceipt(receipt) {
-  console.log("here");
   try {
     const printer = new ThermalPrinter({
       type: PrinterTypes.EPSON, // 'star' or 'epson'
@@ -384,6 +383,11 @@ ipcMain.handle("add-ref", (event, product) => {
     return { success: false, message: "Por favor, preencha todos os campos." };
   }
 
+  const floatPrice = Number(product.price);
+  if (isNaN(floatPrice)) {
+    return { success: false, message: "O valor fornecido não é válido." };
+  }
+
   try {
     // Verifica se já existe uma peça com a mesma referência
     const checkExistingRef = db.prepare("SELECT COUNT(*) AS count FROM products WHERE ref = ?").get(product.prodRef);
@@ -394,7 +398,7 @@ ipcMain.handle("add-ref", (event, product) => {
 
     // Prepara a instrução SQL para inserir a peça
     const stmt = db.prepare("INSERT INTO products (ref, type, color, style, description, price) VALUES (?, ?, ?, ?, ?, ?)");
-    stmt.run(product.prodRef, product.type, product.color, product.style || "", product.description, product.price);
+    stmt.run(product.prodRef, product.type, product.color, product.style || "", product.description, floatPrice);
 
     return { success: true, message: "Peça criada com sucesso!" };
   } catch (error) {
@@ -402,3 +406,49 @@ ipcMain.handle("add-ref", (event, product) => {
     return { success: false, message: "Erro ao criar peça." };
   }
 });
+
+ipcMain.handle("edit-ref", (event, product) => {
+  const { prodRef, type, color, style, description, price, oldProdRef } = product;
+
+  // Verifica se todos os campos necessários foram preenchidos
+  if (!product.prodRef || !product.type || !product.color || !product.description || !product.price) {
+    return { success: false, message: "Por favor, preencha todos os campos." };
+  }
+
+  // Converte o preço para número real
+  const floatPrice = parseFloat(price);
+  if (isNaN(floatPrice)) {
+    return { success: false, message: "O preço fornecido não é válido." };
+  }
+
+  try {
+    // Se a ref foi alterada, verificamos se a nova ref já existe na base de dados
+    if (product.prodRef !== product.oldProdRef) {
+      const refCheck = db.prepare("SELECT COUNT(*) AS count FROM products WHERE ref = ?").get(prodRef);
+      if (refCheck.count > 0) {
+        return { success: false, message: "Já existe uma peça com a nova referência." };
+      }
+    }
+
+    // Prepara a instrução SQL para atualizar os dados da peça
+    const stmt = db.prepare(`
+      UPDATE products
+      SET ref = ?, type = ?, color = ?, style = ?, description = ?, price = ?
+      WHERE ref = ?
+    `);
+
+    // Executa a atualização na base de dados
+    const result = stmt.run(prodRef, type, color, style || "", description, floatPrice, oldProdRef);
+
+    // Verifica se a atualização foi bem-sucedida
+    if (result.changes > 0) {
+      return { success: true, message: "Peça editada com sucesso!" };
+    } else {
+      return { success: false, message: "Peça não encontrada." };
+    }
+  } catch (error) {
+    console.error("Erro ao editar peça:", error);
+    return { success: false, message: "Erro ao editar peça." };
+  }
+});
+
