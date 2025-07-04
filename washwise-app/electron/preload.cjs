@@ -12,4 +12,8 @@ contextBridge.exposeInMainWorld("api", {
     getClientesSearchNumber: (searchTerm) => ipcRenderer.invoke("get-clientes-search-number", searchTerm),
     removeClient: (clientId) => ipcRenderer.invoke("remove-client", clientId),
     editClient: (client) => ipcRenderer.invoke("edit-client", client),
+    getProdutosRef: (searchTerm) => ipcRenderer.invoke("get-produtos-ref", searchTerm),
+    getProdutosDescription: (searchTerm) => ipcRenderer.invoke("get-produtos-description", searchTerm),
+    removeRef: (productRef) => ipcRenderer.invoke("remove-ref", productRef),
+    addRef: (product) => ipcRenderer.invoke("add-ref", product),
   });

@@ -201,6 +201,8 @@ async function printReceipt(receipt) {
   }
 }
 
+
+//operações de clientes
 ipcMain.handle("get-clientes", () => {
     return db.prepare("SELECT * FROM clients").all();
   });
@@ -239,7 +241,7 @@ ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
     WHERE number LIKE ?;
   `;
 
-  return db.prepare(query).all(`${searchTerm}%`);;
+  return db.prepare(query).all(`${searchTerm}%`);
 });
 
 ipcMain.handle("get-refs", () => {
@@ -319,5 +321,84 @@ ipcMain.handle("edit-client", async (event, client) => {
   } catch (error) {
     console.error("Erro ao editar cliente:", error);
     return { success: false, message: "Ocorreu um erro inesperado." };
+  }
+});
+
+
+//operações de peças
+ipcMain.handle("get-produtos-ref", (event, searchTerm) => {
+  const query = `
+    SELECT 
+      ref,
+      type,
+      color,
+      style,
+      description,
+      price
+    FROM products
+    WHERE ref LIKE ?;
+  `;
+
+  return db.prepare(query).all(`${searchTerm}%`);
+});
+
+ipcMain.handle("get-produtos-description", (event, searchTerm) => {
+  const searchTermStr = String(searchTerm).toLowerCase(); // pesquisa case-insensitive
+  
+  const query = `
+    SELECT 
+      ref, 
+      type, 
+      color, 
+      style, 
+      description, 
+      price
+    FROM products
+    WHERE LOWER(description) LIKE ?;
+  `;
+  
+  const result = db.prepare(query).all(`%${searchTermStr}%`);
+  return result;
+});
+
+ipcMain.handle("remove-ref", async (event, productRef) => {
+  try {
+    // Remove a peça da tabela de produtos
+    const removeProductQuery = db.prepare("DELETE FROM products WHERE ref = ?");
+    const result = removeProductQuery.run(productRef);
+
+    // Verifica se a exclusão foi bem-sucedida
+    if (result.changes > 0) {
+      return { success: true, message: "Peça excluída com sucesso!" };
+    } else {
+      return { success: false, message: "Peça não encontrada." };
+    }
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+});
+
+ipcMain.handle("add-ref", (event, product) => {
+  // Verifica se todos os campos necessários foram preenchidos
+  if (!product.prodRef || !product.type || !product.color || !product.description || !product.price) {
+    return { success: false, message: "Por favor, preencha todos os campos." };
+  }
+
+  try {
+    // Verifica se já existe uma peça com a mesma referência
+    const checkExistingRef = db.prepare("SELECT COUNT(*) AS count FROM products WHERE ref = ?").get(product.prodRef);
+
+    if (checkExistingRef.count > 0) {
+      return { success: false, message: "Já existe uma peça com esta referência." };
+    }
+
+    // Prepara a instrução SQL para inserir a peça
+    const stmt = db.prepare("INSERT INTO products (ref, type, color, style, description, price) VALUES (?, ?, ?, ?, ?, ?)");
+    stmt.run(product.prodRef, product.type, product.color, product.style || "", product.description, product.price);
+
+    return { success: true, message: "Peça criada com sucesso!" };
+  } catch (error) {
+    console.error("Erro ao adicionar peça:", error);
+    return { success: false, message: "Erro ao criar peça." };
   }
 });
