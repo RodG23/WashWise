@@ -11,7 +11,7 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
   const [isNewClientActive, setIsNewClientActive] = useState(true); // Para controlar o estado dos botões
 
   useEffect(() => {
-    if (activeTab !== "Clientes") {
+    if (activeTab !== "clientes") {
       handleNewClient();
     }
   }, [activeTab]);
@@ -23,14 +23,14 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
       setName(selectedClientEdit.name);
       setNumber(selectedClientEdit.number);
       setAddress(selectedClientEdit.address);
-      setIsNewClientActive(false); // Desabilitar "Novo Cliente" quando estiver editando
+      setIsNewClientActive(false); // Desabilitar "Novo Cliente" quando estiver a editar
     } else {
       // Limpar os campos se não houver cliente selecionado (modo de criação)
       setId("");
       setName("");
       setNumber("");
       setAddress("");
-      setIsNewClientActive(true); // Ativar "Novo Cliente" quando não estiver editando
+      setIsNewClientActive(true); // Ativar "Novo Cliente" quando não estiver a editar
     }
   }, [selectedClientEdit]);
 

@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect, forwardRef } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 
-//todo nao permitir refs que nao existam, verificar ao adicionar
-
 //Passa para app descript, ref e price, deve ser suficiente
 const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef }, ref) => {
   const [result, setResult] = useState([]); //resultado de pesquisa
@@ -31,7 +29,7 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
           (ref) =>
             ref &&
             ref.ref &&
-            ref.ref.toLowerCase().includes(value.toLowerCase())
+            ref.ref.toLowerCase().startsWith(value.toLowerCase())
         )
         .sort((a, b) => a.ref.localeCompare(b.ref));
       setResult(filtered);

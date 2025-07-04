@@ -1,5 +1,6 @@
 import "./App.css";
 import React, { useState, useRef } from "react";
+
 import ClientSearch from "./components/ClientSearch"
 import RefSearch from "./components/RefSearch"
 import QuantitySelector from "./components/QuantitySelector";
@@ -8,9 +9,15 @@ import DynamicTable from "./components/DynamicTable";
 import CheckboxSelector from "./components/CheckboxSelector";
 import SaveButton from "./components/SaveButton";
 import SavePrintButton from "./components/SavePrintButton";
+
 import ClientFilters from './components/ClientFilters';
 import ClientTable from './components/ClientTable';
 import ClientForm from './components/ClientForm';
+
+import RefFilters from './components/RefFilters';
+import RefTable from './components/RefTable';
+import RefForm from './components/RefForm';
+
 import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
 import { GiClothesline } from "react-icons/gi";
@@ -34,6 +41,10 @@ function App() {
   //aba clientes
   const [filteredClients, setFilteredClients] = useState([]); // Estado para armazenar os clientes filtrados
   const [selectedClientEdit, setSelectedClientEdit] = useState(null); // Estado para guardar o cliente selecionado para editar
+
+  //aba peças
+  const [filteredRefs, setFilteredRefs] = useState([]); // Estado para armazenar as peças filtradas
+  const [selectedRefEdit, setSelectedRefEdit] = useState(null); // Estado para guardar a peça selecionada para editar
 
 
 
@@ -73,6 +84,7 @@ function App() {
     });
   };
   
+  //todo verificar se valor usado em items é um inteiro ou string
   //adiciona item talao
   const addItem = () => {
     if (ref && quantity) {
@@ -129,6 +141,27 @@ function App() {
     }
   };
 
+
+  //aba peças
+  // Função para atualizar as peças filtradas no refFilters
+  const updateFilteredRefs = (refs) => {
+    setFilteredRefs(refs);
+  };
+
+  const handleNewRef = () => {
+  setSelectedRefEdit(null); // Limpa a peça selecionada, indo para o estado de "Nova Peça"
+  };
+
+  const handleRefSelectForEdit = (refSelected) => {
+    // Se a peça for clicada e já estiver selecionada, desmarca a seleção
+    if (selectedRefEdit && selectedRefEdit.ref === refSelected.ref) {
+      handleNewRef();
+    } else {
+      // Seleciona a nova peça para edição
+      setSelectedRefEdit(refSelected);
+    }
+  };
+
   
   //app
   return (
@@ -161,7 +194,7 @@ function App() {
             <div className="col-start-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center overflow-clip">
               <ClientForm selectedClientEdit={selectedClientEdit} isEditing={selectedClientEdit !== null} handleNewClient={handleNewClient} updateFilteredClients={updateFilteredClients} activeTab={activeTab}/>
             </div>
-          </div>
+            </div>
           </>}
           {activeTab === "talão" && 
           <>
@@ -205,7 +238,20 @@ function App() {
             </div>
           </div>
           </>}
-          {activeTab === "peças" && <div className="p-4">Peças</div>}
+          {activeTab === "peças" && 
+          <>
+            <div className="h-full grid grid-cols-3 grid-rows-5">
+            <div className="row-start-1 col-span-3 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
+              <RefFilters updateFilteredRefs={updateFilteredRefs}/>
+            </div>
+            <div className="col-span-2 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
+              <RefTable filteredRefs={filteredRefs} updateFilteredRefs={updateFilteredRefs} selectedRefId={selectedRefEdit?.ref} onRefSelect={handleRefSelectForEdit}/>
+            </div>
+            <div className="col-start-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center overflow-clip">
+              <RefForm selectedRefEdit={selectedRefEdit} isEditing={selectedRefEdit !== null} handleNewRef={handleNewRef} updateFilteredRefs={updateFilteredRefs} activeTab={activeTab}/>
+            </div>
+            </div>
+          </>}
         </div>
       </div>
       <ToastContainer position="top-right" autoClose={3000} />
