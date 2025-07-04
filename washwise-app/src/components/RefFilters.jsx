@@ -81,7 +81,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
               type="text"
               placeholder={""}
               className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
-              value={searchType === "id" ? "Número de peça" : "Nome de Peça"}
+              value={searchType === "id" ? "Referência de peça" : "Nome de Peça"}
               readOnly
             />
             <IoIosArrowDropdown className="size-6" />
@@ -97,7 +97,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
                     hover:bg-stone-400 hover:rounded-2xl ${searchType === option ? "bg-stone-400 rounded-2xl" : ""}`}
                   onClick={() => handleOptionSelect(option)}
                 >
-                  <span>{option === "id" ? "Número de Peça" : "Nome de Peça"}</span>
+                  <span>{option === "id" ? "Referência de Peça" : "Nome de Peça"}</span>
                 </li>
               ))}
             </ul>
@@ -108,7 +108,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
       {/* Campo de Pesquisa */}
       <div className="h-full ml-1 flex-col flex justify-center">
         <div className="flex w-[70%] text-3xl overflow-clip mt-3 mb-1">
-          <p>{`${searchType === "id" ? "Número de Peça" : "Nome de Peça"}`}</p>
+          <p>{`${searchType === "id" ? "Referência de Peça" : "Nome de Peça"}`}</p>
         </div>
         <div className='relative w-[70%]'>
           <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">

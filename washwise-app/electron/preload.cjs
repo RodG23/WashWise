@@ -16,4 +16,5 @@ contextBridge.exposeInMainWorld("api", {
     getProdutosDescription: (searchTerm) => ipcRenderer.invoke("get-produtos-description", searchTerm),
     removeRef: (productRef) => ipcRenderer.invoke("remove-ref", productRef),
     addRef: (product) => ipcRenderer.invoke("add-ref", product),
+    editRef: (product) => ipcRenderer.invoke("edit-ref", product),
   });

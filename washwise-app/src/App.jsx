@@ -24,6 +24,7 @@ import { GiClothesline } from "react-icons/gi";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+//todo limpar a tabela da aba talao quando troca de aba
 
 function App() {
   //aba novo talao
@@ -84,7 +85,6 @@ function App() {
     });
   };
   
-  //todo verificar se valor usado em items é um inteiro ou string
   //adiciona item talao
   const addItem = () => {
     if (ref && quantity) {
@@ -225,7 +225,7 @@ function App() {
               </div>
             </div>
             <div className="col-span-2 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
-              <DynamicTable items={items} onDelete={deleteItem} onNoteChange={getNote}/>
+              <DynamicTable items={items} onDelete={deleteItem} onNoteChange={getNote} activeTab={activeTab} setItems={setItems}/>
             </div>
             <div className="row-span-2 col-start-3 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
               <CheckboxSelector saveTrigger={saveTrigger} onCheckboxChange={getCheckbox}/>

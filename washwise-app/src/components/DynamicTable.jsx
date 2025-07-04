@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { IoIosClose } from "react-icons/io";
 
-const DynamicTable = ({ items, onDelete, onNoteChange }) => {
+const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems }) => {
   const numberOfItemsToRender = 8;
 
   const itemsWithEmptyRows = [
@@ -11,6 +11,12 @@ const DynamicTable = ({ items, onDelete, onNoteChange }) => {
 
   // Estado local das notas (por índice)
   const [localNotes, setLocalNotes] = useState([]);
+
+  useEffect(() => {
+    if (activeTab !== "Novo Talão") {
+      setItems([]);
+    }
+  }, [activeTab]);
 
   // Sempre que os items mudarem, atualiza o estado local
   useEffect(() => {
