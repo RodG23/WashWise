@@ -17,4 +17,5 @@ contextBridge.exposeInMainWorld("api", {
     removeRef: (productRef) => ipcRenderer.invoke("remove-ref", productRef),
     addRef: (product) => ipcRenderer.invoke("add-ref", product),
     editRef: (product) => ipcRenderer.invoke("edit-ref", product),
+    getLastReceipt: () => ipcRenderer.invoke("get-last-receipt"),
   });

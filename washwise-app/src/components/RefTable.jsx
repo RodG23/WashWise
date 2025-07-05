@@ -65,7 +65,7 @@ const RefTable = ({ filteredRefs, updateFilteredRefs, selectedRefId, onRefSelect
         <thead>
           <tr className="bg-[#D9D9D9] sticky top-0 z-10">
             <th className="w-1/6 p-2 font-normal text-left border-r-4 border-b-4 border-[#B8B8B8] pt-5 pb-5 pl-5">
-              Número
+              Referência
             </th>
             <th className="w-3/6 p-2 font-normal text-left border-r-0 border-b-4 border-[#B8B8B8] pl-5">
               Descrição

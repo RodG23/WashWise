@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { IoIosClose } from "react-icons/io";
 
-const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems }) => {
+const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, saveTrigger}) => {
   const numberOfItemsToRender = 8;
 
   const itemsWithEmptyRows = [
@@ -11,6 +11,21 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems }) =>
 
   // Estado local das notas (por índice)
   const [localNotes, setLocalNotes] = useState([]);
+  const [nextItem, setNextItem] = useState(0);
+
+  useEffect(() => {
+      window.api.getLastReceipt()
+        .then(response => {
+          if (response.success) {
+            setNextItem(response.item.id + 1);
+          } else {
+            setNextItem(1);
+          }
+        })
+        .catch(error => {
+          console.error("Erro a procurar último item:", error);
+        });
+  }, [saveTrigger]);
 
   useEffect(() => {
     if (activeTab !== "Novo Talão") {
@@ -56,7 +71,9 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems }) =>
               Peça
             </th>
             <th className="w-1/6 p-2 font-normal text-left border-b-4 border-r-0 border-[#B8B8B8] pl-5"></th>
-            <th className="w-1/6 p-2 text-center border-b-4 border-[#B8B8B8]"></th>
+            <th className="w-1/6 p-2 text-center border-b-4 font-normal border-[#B8B8B8]">
+            {nextItem}
+            </th>
           </tr>
         </thead>
         <tbody>
