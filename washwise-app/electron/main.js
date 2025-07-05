@@ -452,3 +452,13 @@ ipcMain.handle("edit-ref", (event, product) => {
   }
 });
 
+ipcMain.handle("get-last-receipt", () => {
+  try {
+    const item = db.prepare("SELECT * FROM receipts ORDER BY id DESC limit 1").get();
+    return {success: true, item: item};
+  } catch (error) {
+    console.error("Erro ao obter último item:", error);
+    return {success: false, message: "Erro ao obter último talão" };
+  }
+});
+
