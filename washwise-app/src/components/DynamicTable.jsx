@@ -72,7 +72,7 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, save
             </th>
             <th className="w-1/6 p-2 font-normal text-left border-b-4 border-r-0 border-[#B8B8B8] pl-5"></th>
             <th className="w-1/6 p-2 text-center border-b-4 font-normal border-[#B8B8B8]">
-            {nextItem}
+            Nº {nextItem}
             </th>
           </tr>
         </thead>

@@ -18,8 +18,11 @@ import RefFilters from './components/RefFilters';
 import RefTable from './components/RefTable';
 import RefForm from './components/RefForm';
 
+import ReceipTable from "./components/ReceiptTable";
+
 import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
+import { LuBookType } from 'react-icons/lu';
 import { GiClothesline } from "react-icons/gi";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -50,6 +53,7 @@ function App() {
 
   const tabs = [
     { name: "Novo Talão", icon: <TfiReceipt size={30} />, id: "talão" },
+    { name: "Talões", icon: <LuBookType size={30}/>, id: "talões" },
     { name: "Clientes", icon: <LuUsersRound size={30} />, id: "clientes" },
     { name: "Peças", icon: <GiClothesline size={30}/>, id: "peças" },
   ];
@@ -235,6 +239,17 @@ function App() {
             <div className="col-start-3 row-start-5 bg-[#E1E4F1] flex justify-center items-start">
               <SavePrintButton onSave={saveReceipt} client={client} items={items} checkbox={checkbox}/>
             </div>
+          </div>
+          </>}
+          {activeTab === "talões" && 
+          <>
+            <div className="h-full grid grid-cols-6 grid-rows-5">
+              <div className="row-start-1 col-span-6 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
+                <RefFilters updateFilteredRefs={updateFilteredRefs}/>
+              </div>
+              <div className="col-span-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center pl-[10%]">
+                <ReceipTable filteredRefs={filteredRefs} updateFilteredRefs={updateFilteredRefs} selectedRefId={selectedRefEdit?.ref} onRefSelect={handleRefSelectForEdit}/>
+              </div>
           </div>
           </>}
           {activeTab === "peças" && 
