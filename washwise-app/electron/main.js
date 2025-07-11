@@ -34,7 +34,8 @@ app.on("window-all-closed", () => {
 
 async function saveReceipt(receipt) {
   try {
-    const createdAt = new Date().toISOString().slice(0, 19).replace("T", " "); // Formato "YYYY-MM-DD HH:MM:SS"
+    const now = new Date();
+    const createdAt = now.toLocaleString("sv-SE").replace("T", " ");
     const stmt = db.prepare(`
       INSERT INTO receipts (client_id, products_list, state, total_price, date, created_at)
       VALUES (?, ?, ?, ?, ?, ?)
