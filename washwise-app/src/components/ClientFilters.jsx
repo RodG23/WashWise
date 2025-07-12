@@ -34,7 +34,7 @@ const ClientFilters = ({ updateFilteredClients }) => {
           updateFilteredClients(clientes);
         })
         .catch((error) => {
-          console.error("Erro ao buscar clientes:", error);
+          console.error("Erro ao procurar clientes:", error);
         });
     } else if (searchType === "receipt") {
       window.api.getClientesSearchReceipt(debouncedTerm)
@@ -42,7 +42,7 @@ const ClientFilters = ({ updateFilteredClients }) => {
           updateFilteredClients(clientes);
         })
         .catch((error) => {
-          console.error("Erro ao buscar cliente pelo talão:", error);
+          console.error("Erro ao procurar cliente pelo talão:", error);
         });
     } else if (searchType === "number") {
       window.api.getClientesSearchNumber(debouncedTerm) // Pesquisa por número de telefone
@@ -50,7 +50,7 @@ const ClientFilters = ({ updateFilteredClients }) => {
           updateFilteredClients(clientes);
         })
         .catch((error) => {
-          console.error("Erro ao buscar clientes pelo número de telefone:", error);
+          console.error("Erro ao procurar clientes pelo número de telefone:", error);
         });
     }
   };
@@ -114,7 +114,7 @@ const ClientFilters = ({ updateFilteredClients }) => {
       {/* Campo de Pesquisa */}
       <div className="h-full ml-1 flex-col flex justify-center">
         <div className="flex w-[70%] text-3xl overflow-clip mt-3 mb-1">
-          <p>{`${searchType === "name" ? "Nome de Cliente" : searchType === "receipt" ? "Número de Talão" : "Número de Telefone"}`}</p>
+          <p>{`${searchType === "name" ? "Nome de Cliente:" : searchType === "receipt" ? "Número de Talão:" : "Número de Telefone:"}`}</p>
         </div>
         <div className='relative w-[70%]'>
           <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
