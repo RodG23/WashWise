@@ -3,8 +3,6 @@ import { BiSearchAlt } from "react-icons/bi";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//todo mudar a pesquisa para uma com debounce que filtre na base de dados e nao aqui
-
 //Passagem para app do nome e id de cliente
 //Get de clientes sem number, não é necessário
 const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
@@ -14,7 +12,9 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
 
   const inputRef = useRef(null); //refereencia para input
   const itemRefs = useRef([]); //lista de pesquisa mostrada
-
+  const [debouncedTerm, setDebouncedTerm] = useState(input); // Termo de pesquisa com debounce
+  const [isSelectingClient, setIsSelectingClient] = useState(false); // Flag para impedir nova pesquisa ao selecionar cliente por causa do debounce
+  
   useEffect(() => {
     if (saveTrigger) {
       setInput("");
@@ -22,24 +22,36 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
     }
   }, [saveTrigger]);
 
-  //filtrar pesquisa
-  const filterClients = (value) => {
-    if (value === "" || !value) {
-      setResult([]);
-      return;
-    }
+  // Usar o useEffect para debouncing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedTerm(input); // Atualiza o termo com debounce
+    }, 300); 
 
-    window.api.getClientesSearch().then((clientes) => {
-      const filtered = clientes
-        .filter(
-          (cliente) =>
-            cliente &&
-            cliente.name &&
-            cliente.name.toLowerCase().includes(value.toLowerCase())
-        )
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setResult(filtered);
-    });
+    return () => clearTimeout(timer); // Limpa o timer se searchTerm mudar antes de 500ms
+  }, [input]);
+
+  // Executa a pesquisa sempre que debouncedTerm mudar
+  useEffect(() => {
+    if (debouncedTerm && !isSelectingClient) {
+      filterClients();
+    } else {
+      setResult([]);
+    }
+  }, [debouncedTerm]);
+
+  //filtrar pesquisa
+  const filterClients = () => {
+
+    window.api.getClientesSearchName(debouncedTerm)
+        .then((clientes) => {
+          console.log(clientes);
+          clientes.sort((a, b) => a.name.localeCompare(b.name));
+          setResult(clientes);
+        })
+        .catch((error) => {
+          console.error("Erro ao procurar clientes:", error);
+        });
   };
 
   const handleBlur = () => {
@@ -55,19 +67,24 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
     }
   };
 
-  const handleFocus = () => {
-    filterClients(input);
-  };
+  // //todo meter a filtrar se input dif 0
+  // const handleFocus = () => {
+  //   if(input && input !== "") {
+  //     filterClients(input);
+  //   }
+  // };
 
-  //lida com mudança no input
+  // Lida com mudança no input
   const handleChange = (value) => {
     setInput(value);
-    filterClients(value);
-    setSelectedIndex(0);
+    setSelectedIndex(0);  // Resetar a seleção do item
+    //filterClients forma antiga
+    setIsSelectingClient(false); // Resetar o flag para permitir a pesquisa
   };
 
   //lida com clique na lisat de pesquisas
   const handleItemClick = (cli) => {
+    setIsSelectingClient(true); // Impede que a pesquisa seja disparada
     setInput(cli.name);
     onClientChange({ name: cli.name, id: cli.id });
     setResult([]);
@@ -136,7 +153,7 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
-          onFocus={handleFocus}
+          //onFocus={handleFocus}
         />
       </div>
 
