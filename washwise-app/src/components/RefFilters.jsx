@@ -35,7 +35,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
           //console.log(pecas);
         })
         .catch((error) => {
-          console.error("Erro ao buscar peças por id: ", error);
+          console.error("Erro ao procurar peças pelo id: ", error);
         });
     } else if (searchType === "nome") {
       window.api.getProdutosDescription(debouncedTerm)
@@ -44,7 +44,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
           //console.log(pecas);
         })
         .catch((error) => {
-          console.error("Erro ao buscar peças por nome: ", error);
+          console.error("Erro ao procurar peças pelo nome: ", error);
         });
     }
   };
@@ -108,7 +108,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
       {/* Campo de Pesquisa */}
       <div className="h-full ml-1 flex-col flex justify-center">
         <div className="flex w-[70%] text-3xl overflow-clip mt-3 mb-1">
-          <p>{`${searchType === "id" ? "Referência de Peça" : "Nome de Peça"}`}</p>
+          <p>{`${searchType === "id" ? "Referência de Peça:" : "Nome de Peça:"}`}</p>
         </div>
         <div className='relative w-[70%]'>
           <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">

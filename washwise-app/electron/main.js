@@ -324,6 +324,16 @@ ipcMain.handle("edit-client", async (event, client) => {
   }
 });
 
+ipcMain.handle("get-last-receipt", () => {
+  try {
+    const item = db.prepare("SELECT * FROM receipts ORDER BY id DESC limit 1").get();
+    return {success: true, item: item};
+  } catch (error) {
+    console.error("Erro ao obter último item:", error);
+    return {success: false, message: "Erro ao obter último talão" };
+  }
+});
+
 
 //operações de peças
 ipcMain.handle("get-produtos-ref", (event, searchTerm) => {
@@ -453,13 +463,69 @@ ipcMain.handle("edit-ref", (event, product) => {
   }
 });
 
-ipcMain.handle("get-last-receipt", () => {
+
+//operacoes taloes
+ipcMain.handle("get-receipt-by-id", (event, receiptId) => {
   try {
-    const item = db.prepare("SELECT * FROM receipts ORDER BY id DESC limit 1").get();
-    return {success: true, item: item};
+    const query = `
+      SELECT * FROM receipts
+      WHERE id = ?
+    `;
+    const receipt = db.prepare(query).get(receiptId);
+
+    if (receipt) {
+      return { success: true, receipt };
+    } else {
+      return { success: false, message: "Talão não existe." };
+    }
   } catch (error) {
-    console.error("Erro ao obter último item:", error);
-    return {success: false, message: "Erro ao obter último talão" };
+    console.error("Erro ao procurar talão pelo ID:", error);
+    return { success: false, message: "Erro ao procurar talão pelo ID." };
   }
 });
+
+ipcMain.handle("get-receipts-by-client", (event, clientId) => {
+  try {
+    const query = `
+      SELECT r.*
+      FROM receipts r
+      WHERE r.client_id = ?
+    `;
+    const receipts = db.prepare(query).all(clientId);
+
+    if (receipts.length > 0) {
+      return { success: true, receipts };
+    } else {
+      return { success: false, message: "Nenhum talão encontrado para este cliente." };
+    }
+  } catch (error) {
+    console.error("Erro ao procurar talões pelo ID do cliente:", error);
+    return { success: false, message: "Erro ao procurar talões pelo ID do cliente." };
+  }
+});
+
+ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
+  try {
+    const formattedStartDate = startDate + " 00:00:00"; // Data de início com hora inicial
+    const formattedEndDate = endDate + " 23:59:59";   // Data de fim com hora final
+
+    const query = `
+      SELECT * FROM receipts
+      WHERE created_at BETWEEN ? AND ?
+    `;
+    const receipts = db.prepare(query).all(formattedStartDate, formattedEndDate);
+
+    if (receipts.length > 0) {
+      return { success: true, receipts };
+    } else {
+      return { success: false, message: "Nenhum talão encontrado neste intervalo." };
+    }
+  } catch (error) {
+    console.error("Erro ao procurar talões por intervalo de datas:", error);
+    return { success: false, message: "Erro ao procurar talões por intervalo de datas." };
+  }
+});
+
+
+
 

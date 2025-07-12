@@ -13,3 +13,7 @@
 .custom-warn-progress {
   background: #ff5733 !important;
 }
+
+input[type="date"]:focus {
+  outline: none;
+}

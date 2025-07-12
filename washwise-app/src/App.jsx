@@ -18,7 +18,8 @@ import RefFilters from './components/RefFilters';
 import RefTable from './components/RefTable';
 import RefForm from './components/RefForm';
 
-import ReceipTable from "./components/ReceiptTable";
+import ReceipTable from './components/ReceiptTable';
+import ReceiptFilters from './components/ReceiptFilters'
 
 import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
@@ -48,6 +49,10 @@ function App() {
   //aba peças
   const [filteredRefs, setFilteredRefs] = useState([]); // Estado para armazenar as peças filtradas
   const [selectedRefEdit, setSelectedRefEdit] = useState(null); // Estado para guardar a peça selecionada para editar
+
+  //aba talões
+  const [filteredReceipts, setFilteredReceipts] = useState([]); // Estado para armazenar os talões filtrados
+  const [selectedReceiptEdit, setSelectedReceiptEdit] = useState(null); // Estado para guardar o talão selecionado para editar
 
 
 
@@ -165,6 +170,25 @@ function App() {
     }
   };
 
+  //aba talões
+  // Função para atualizar os talões filtrados
+  const updateFilteredReceipts = (receipts) => {
+    setFilteredReceipts(receipts);
+  };
+
+  const handleNewReceipt = () => {
+  setSelectedReceiptEdit(null); // Limpa o talão selecionado, indo para o estado de "Novo Talão" - neste caso não se vai criar, mas tem comportamento análogo, deixa de estar um talão selecionado
+  };
+
+  const handleReceiptSelectForEdit = (receiptSelected) => {
+    // Se a peça for clicada e já estiver selecionada, desmarca a seleção
+    if (selectedReceiptEdit && selectedReceiptEdit.id === receiptSelected.id) {
+      handleNewReceipt();
+    } else {
+      // Seleciona a nova peça para edição
+      setSelectedReceiptEdit(receiptSelected);
+    }
+  };
   
   //app
   return (
@@ -245,10 +269,10 @@ function App() {
           <>
             <div className="h-full grid grid-cols-6 grid-rows-5">
               <div className="row-start-1 col-span-6 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
-                <RefFilters updateFilteredRefs={updateFilteredRefs}/>
+                <ReceiptFilters updateFilteredReceipts={updateFilteredReceipts}/>
               </div>
               <div className="col-span-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center pl-[10%]">
-                <ReceipTable filteredRefs={filteredRefs} updateFilteredRefs={updateFilteredRefs} selectedRefId={selectedRefEdit?.ref} onRefSelect={handleRefSelectForEdit}/>
+                <ReceipTable filteredReceipts={filteredReceipts} updateFilteredReceipts={updateFilteredReceipts} selectedReceiptId={selectedReceiptEdit?.id} onReceiptSelect={handleReceiptSelectForEdit}/>
               </div>
           </div>
           </>}

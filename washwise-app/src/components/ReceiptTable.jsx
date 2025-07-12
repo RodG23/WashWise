@@ -4,29 +4,29 @@ import { AiTwotoneDelete } from "react-icons/ai";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const ReceiptTable = ({ filteredRefs, updateFilteredRefs, selectedRefId, onRefSelect }) => {
-  const numberOfRefsToRender = 8;
+const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceiptId, onReceiptSelect }) => {
+  const numberOfReceiptsToRender = 8;
 
-  // Preenche com linhas vazias caso haja menos peças que o número desejado
-  const refsWithEmptyRows = [
-    ...filteredRefs,
-    ...Array(Math.max(0, numberOfRefsToRender - filteredRefs.length)).fill(null),
+  // Preenche com linhas vazias caso haja menos talões que o número desejado
+  const receiptsWithEmptyRows = [
+    ...filteredReceipts,
+    ...Array(Math.max(0, numberOfReceiptsToRender - filteredReceipts.length)).fill(null),
   ];
 
   const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false); // Controla se a exclusão foi confirmada
-  const [refToDelete, setRefToDelete] = useState(null); // Armazena a peça que está marcada para exclusão
+  const [receiptToDelete, setReceiptToDelete] = useState(null); // Armazena o talão que está marcado para exclusão
   const [timeoutID, setTimeoutID] = useState(null); // Armazena o ID do timeout para a exclusão
 
-  const handleDeleteClick = (ref) => {
-    if (refToDelete && refToDelete.ref === ref.ref && isDeleteConfirmed) {
-      // Se a peça já estiver confirmada para exclusão, realiza a exclusão
-      window.api.removeRef(ref.ref)  // Chamaz a função de remoção de peça no backend (main process)
+  const handleDeleteClick = (receipt) => {
+    if (receiptToDelete && receiptToDelete.id === receipt.id && isDeleteConfirmed) {
+      // Se o talão já estiver confirmado para exclusão, realiza a exclusão
+      window.api.removeReceipt(receipt.id)  // Chama a função de remoção de talão no backend (main process)
         .then(response => {
           if (response.success) {
             toast.success(response.message,{
-                    toastId: "delete-ref-success",
+                    toastId: "delete-receipt-success",
                   });
-            updateFilteredRefs((prevRefs) => prevRefs.filter((item) => item.ref !== ref.ref));
+            updateFilteredReceipts((prevReceipts) => prevReceipts.filter((item) => item.id !== receipt.id));
           } else {
             toast.warn(response.message, {
                     position: "top-right",
@@ -37,14 +37,14 @@ const ReceiptTable = ({ filteredRefs, updateFilteredRefs, selectedRefId, onRefSe
           }
         })
         .catch(error => {
-          console.error("Erro ao remover peça:", error);
+          console.error("Erro ao remover talão:", error);
       });      
       setIsDeleteConfirmed(false); // Reseta o estado após a exclusão
-      setRefToDelete(null); // Reseta a peça a ser excluída
+      setReceiptToDelete(null); // Reseta o talão a ser excluído
     } else {
       // Primeiro clique para confirmar
       setIsDeleteConfirmed(true);
-      setRefToDelete(ref);
+      setReceiptToDelete(receipt);
 
       // Se já havia um timeout limpa
       if (timeoutID) clearTimeout(timeoutID);
@@ -52,7 +52,7 @@ const ReceiptTable = ({ filteredRefs, updateFilteredRefs, selectedRefId, onRefSe
       // Cria um novo timeout de 3s
       const id = setTimeout(() => {
         setIsDeleteConfirmed(false);
-        setRefToDelete(null);
+        setReceiptToDelete(null);
       }, 3000);
 
       setTimeoutID(id); // Armazena o ID do timeout
@@ -77,31 +77,31 @@ const ReceiptTable = ({ filteredRefs, updateFilteredRefs, selectedRefId, onRefSe
           </tr>
         </thead>
         <tbody>
-          {refsWithEmptyRows.map((ref, index) => (
+          {receiptsWithEmptyRows.map((receipt, index) => (
             <tr key={index}>
               <td className="p-2 pl-5 text-3xl text-left font-normal border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%] cursor-default">
-                {ref?.ref || ""}
+                {receipt?.id || ""}
               </td>
               <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
-                {ref?.description || ""}
+                {receipt?.date || ""}
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
                 <div className="flex justify-end">
-                  {ref && (
+                  {receipt && (
                     <BiSolidEditAlt
-                      className={`size-10 opacity-55 cursor-pointer hover:opacity-100 ${selectedRefId === ref.ref ? "text-blue-900 opacity-100" : "text-black"}`}
-                      onClick={() => onRefSelect(ref)} // Chama a função de seleção
+                      className={`size-10 opacity-55 cursor-pointer hover:opacity-100 ${selectedReceiptId === receipt.id ? "text-blue-900 opacity-100" : "text-black"}`}
+                      onClick={() => onReceiptSelect(receipt)} // Chama a função de seleção
                     />
                   )}
                 </div>
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
                 <div className="flex justify-center">
-                  {ref && (
+                  {receipt && (
                     <AiTwotoneDelete
                       className={`size-10 opacity-55 cursor-pointer hover:opacity-100
-                        ${refToDelete && refToDelete.ref === ref.ref && isDeleteConfirmed ? "text-red-800 opacity-100" : "text-black"}`}
-                      onClick={() => handleDeleteClick(ref)}
+                        ${receiptToDelete && receiptToDelete.id === receipt.id && isDeleteConfirmed ? "text-red-800 opacity-100" : "text-black"}`}
+                      onClick={() => handleDeleteClick(receipt)}
                     />
                   )}
                 </div>

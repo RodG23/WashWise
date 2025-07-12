@@ -18,4 +18,7 @@ contextBridge.exposeInMainWorld("api", {
     addRef: (product) => ipcRenderer.invoke("add-ref", product),
     editRef: (product) => ipcRenderer.invoke("edit-ref", product),
     getLastReceipt: () => ipcRenderer.invoke("get-last-receipt"),
+    getReceiptById: (receiptId) => ipcRenderer.invoke("get-receipt-by-id", receiptId),
+    getReceiptsByDate: (startDate, endDate) => ipcRenderer.invoke("get-receipts-by-date", startDate, endDate),
+    getReceiptsByClient: (clientId) => ipcRenderer.invoke("get-receipts-by-client", clientId),
   });

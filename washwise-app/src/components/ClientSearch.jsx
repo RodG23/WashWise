@@ -3,6 +3,8 @@ import { BiSearchAlt } from "react-icons/bi";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+//todo mudar a pesquisa para uma com debounce que filtre na base de dados e nao aqui
+
 //Passagem para app do nome e id de cliente
 //Get de clientes sem number, não é necessário
 const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
