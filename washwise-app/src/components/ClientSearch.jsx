@@ -26,7 +26,7 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedTerm(input); // Atualiza o termo com debounce
-    }, 300); 
+    }, 200); 
 
     return () => clearTimeout(timer); // Limpa o timer se searchTerm mudar antes de 500ms
   }, [input]);
@@ -42,10 +42,9 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
 
   //filtrar pesquisa
   const filterClients = () => {
-
     window.api.getClientesSearchName(debouncedTerm)
         .then((clientes) => {
-          console.log(clientes);
+          //console.log(clientes);
           clientes.sort((a, b) => a.name.localeCompare(b.name));
           setResult(clientes);
         })
@@ -67,7 +66,6 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
     }
   };
 
-  // //todo meter a filtrar se input dif 0
   // const handleFocus = () => {
   //   if(input && input !== "") {
   //     filterClients(input);

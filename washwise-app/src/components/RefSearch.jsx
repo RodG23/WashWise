@@ -23,16 +23,9 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
       return;
     }
 
-    window.api.getRefs().then((refs) => {
-      const filtered = refs
-        .filter(
-          (ref) =>
-            ref &&
-            ref.ref &&
-            ref.ref.toLowerCase().startsWith(value.toLowerCase())
-        )
-        .sort((a, b) => a.ref.localeCompare(b.ref));
-      setResult(filtered);
+    window.api.getProdutosRef(value).then((refs) => {
+      console.log(refs);
+      setResult(refs);
     });
   };
 
