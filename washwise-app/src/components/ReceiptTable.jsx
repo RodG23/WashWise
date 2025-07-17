@@ -64,15 +64,24 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
       <table className="w-full h-full">
         <thead>
           <tr className="bg-[#D9D9D9] sticky top-0 z-10">
-            <th className="w-1/6 p-2 font-normal text-left border-r-4 border-b-4 border-[#B8B8B8] pt-5 pb-5 pl-5">
-              Referência
+            <th className="w-3/24 p-2 font-normal text-left border-r-4 border-b-4 border-[#B8B8B8] pt-5 pb-5 pl-5">
+              Nº
             </th>
-            <th className="w-3/6 p-2 font-normal text-left border-r-0 border-b-4 border-[#B8B8B8] pl-5">
-              Descrição
+            <th className="w-1/6 p-2 font-normal text-left border-r-2 border-b-4 border-[#B8B8B8] pl-5">
+              Cliente
             </th>
-            <th className="w-1/6 p-2 text-center border-b-4 border-[#B8B8B8]">
+            <th className="w-1/6 p-2 font-normal text-left border-r-2 border-b-4 border-[#B8B8B8] pl-5">
+              Estado
             </th>
-            <th className="w-1/6 p-2 text-center border-b-4 border-[#B8B8B8]">
+            <th className="w-3/24 p-2 font-normal text-left border-r-2 border-b-4 border-[#B8B8B8] pl-5">
+              Valor
+            </th>
+            <th className="w-3/24 p-2 font-normal text-left border-r-0 border-b-4 border-[#B8B8B8] pl-5">
+              Data
+            </th>
+            <th className="w-3/24 p-2 text-center border-b-4 border-[#B8B8B8]">
+            </th>
+            <th className="w-3/24 p-2 text-center border-b-4 border-[#B8B8B8]">
             </th>
           </tr>
         </thead>
@@ -82,8 +91,17 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
               <td className="p-2 pl-5 text-3xl text-left font-normal border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%] cursor-default">
                 {receipt?.id || ""}
               </td>
+              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
+                todo
+              </td>
+              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
+                {receipt?.state || ""}
+              </td>
+              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
+                {receipt?.total_price || ""}
+              </td>
               <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
-                {receipt?.date || ""}
+                {receipt?.state || ""}
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
                 <div className="flex justify-end">

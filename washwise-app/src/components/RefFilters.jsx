@@ -54,7 +54,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedTerm(searchTerm); // Atualiza o termo com debounce
-    }, 500); 
+    }, 300); 
 
     return () => clearTimeout(timer); // Limpa o timer se searchTerm mudar antes de 500ms
   }, [searchTerm]);

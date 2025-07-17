@@ -4,6 +4,8 @@ import { fileURLToPath } from "url";
 import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 
+//todo verificar funcoes que estao a ser passadas para o front mas nao usadas
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

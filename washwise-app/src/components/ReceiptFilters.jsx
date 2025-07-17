@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BiSearchAlt } from "react-icons/bi";
 import { IoIosArrowDropdown } from "react-icons/io";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-//todo colocar a data no dia de hoje quando se abre a aba
-//todo verificar formato de data valido antes de ir a bd  ( numero de digitos )
-//todo adicionar verificação de erros em todas as pesquisas para destinguir demora de inexistencia de match
-//todo procurar cliente e selecionar como no novo talao e ao selecionar é que vai buscar os taloes do cliente 
+//todo adicionar verificação de erros em todas (outras abas tambem) as pesquisas para destinguir demora de inexistencia de match quando da erro limpar tabelas em todas as abas
+//todo organizar tabela para mostrar as infos dos taloes
 
 // Função para filtrar os clientes
 const ReceiptFilters = ({ updateFilteredReceipts }) => {
@@ -16,7 +16,11 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
   const [debouncedTerm, setDebouncedTerm] = useState(searchTerm); // Termo de pesquisa com debounce
   const [startDate, setStartDate] = useState(""); // Data inicial
   const [endDate, setEndDate] = useState(""); // Data final
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState([]); //Lista de resultados na pesquisa de cliente
+  const [selectedIndex, setSelectedIndex] = useState(0); //indice selecionado na pesquisa de cliente
+  const itemRefs = useRef([]); //lista de pesquisa mostrada
+  const [isSelectingClient, setIsSelectingClient] = useState(false); // Flag para impedir nova pesquisa ao selecionar cliente por causa do debounce
+  
 
   // Função para alternar entre as opções
   const toggleOptions = () => {
@@ -27,10 +31,16 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
   const handleOptionSelect = (option) => {
     setSearchType(option);
     setShowOptions(false);
-    inputRef.current?.focus(); // Passar o foco para o campo de pesquisa após selecionar
     setSearchTerm("");
+    inputRef.current?.focus();
     updateFilteredReceipts([]);
+    setClients([]);
   };
+
+  // Foco no input após mudança de searchType
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [searchType]); // Aplica o foco sempre que searchType mudar
 
   // Função para realizar a pesquisa
   const handleSearch = () => {
@@ -38,23 +48,27 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
     if (searchType === "id") {
       window.api.getReceiptById(debouncedTerm)
         .then((response) => {
+          console.log(response);
           if(response.success) {
             const receipt = response.receipt;
             updateFilteredReceipts([receipt]);
-            console.log(receipt);
+            //console.log(receipt);
+          } else {
+            updateFilteredReceipts([]);
           }
         })
         .catch((error) => {
           console.error("Erro ao procurar talão pelo id: ", error);
         });
     } else if (searchType === "cliente") {
-      window.api.getReceiptsByClient(debouncedTerm)
-        .then((receipts) => {
-          updateFilteredReceipts(receipts);
-          console.log(receipts);
+      window.api.getClientesSearchName(debouncedTerm)
+        .then((clients) => {
+          console.log(clients);
+          clients.sort((a, b) => a.name.localeCompare(b.name));
+          setClients(clients);
         })
         .catch((error) => {
-          console.error("Erro ao procurar talão por cliente: ", error);
+          console.error("Erro ao procurar clientes:", error);
         });
     }
   };
@@ -63,12 +77,16 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
   // Função para lidar com o intervalo de datas
   const handleDateChange = () => {
     if (startDate && endDate) {
+      //todo fazer aqui as verificacoes
+      //todo verificar formato de data valido antes de ir a bd  ( numero de digitos ) e inicial anterior a final
       window.api.getReceiptsByDate(startDate, endDate) 
         .then((response) => {
           if(response.success) {
             const receipts = response.receipts;
             updateFilteredReceipts(receipts);
-            console.log(receipts);
+            //console.log(receipts);
+          } else {
+            updateFilteredReceipts([]);
           }
         })
         .catch((error) => {
@@ -77,115 +95,239 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
     }
   };
 
+  // Definir a data inicial e final para hoje
+  const setInitialDates = () => {
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('pt-PT').split('/').reverse().join('-');
+    
+    setStartDate(formattedDate);
+    setEndDate(formattedDate);
+  };
+
 
   // Usar o useEffect para debouncing
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedTerm(searchTerm); // Atualiza o termo com debounce
-    }, 500); 
+    }, 200); 
 
     return () => clearTimeout(timer); // Limpa o timer se searchTerm mudar antes de 500ms
   }, [searchTerm]);
 
   // Executa a pesquisa sempre que debouncedTerm mudar
   useEffect(() => {
-    if (debouncedTerm) {
+    if (debouncedTerm && !isSelectingClient) {
       handleSearch();
     } else {
+      if(!debouncedTerm) {
+        if(searchType === "cliente") {
+        setClients([]);
+        }
       updateFilteredReceipts([]); 
+      }
     }
   }, [debouncedTerm]);
 
-  return (
-    <div className='h-full w-full grid grid-cols-3'>
-      {/* Lista de seleção do tipo de pesquisa */}
-      <div className='row-start-1 bg-[#E1E4F1] flex justify-center items-center flex-col w-full'>
-        <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
-          <p>Filtrar por:</p>
-        </div>
-        <div className="row-start-1 relative w-[70%] cursor-pointer">
-          <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptions}>
-            <input
-              type="text"
-              placeholder={""}
-              className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
-              value={searchType === "data" ? "Intervalo de Datas" : searchType === "id" ? "Número de Talão" : "Nome de Cliente"}
-              readOnly
-            />
-            <IoIosArrowDropdown className="size-6" />
-          </div>
+  // Definir a data inicial no componente
+  useEffect(() => {
+    setInitialDates();
+  }, []);
 
-          {/* Lista de opções */}
-          {showOptions && (
-            <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
-              {["data", "id", "cliente"].map((option, index) => (
-                <li
-                  key={index}
-                  className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
-                    hover:bg-stone-400 hover:rounded-2xl ${searchType === option ? "bg-stone-400 rounded-2xl" : ""}`}
-                  onClick={() => handleOptionSelect(option)}
-                >
-                  <span>{option === "data" ? "Intervalo de Datas" : option === "id" ? "Número de Talão" : "Nome de Cliente"}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+
+  const scrollToItem = (index) => {
+    if (itemRefs.current[index]) {
+      itemRefs.current[index].scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  };
+
+  //lida com clique na lista de pesquisas
+  const handleItemClick = (cli) => {
+    setIsSelectingClient(true); // Impede que a pesquisa seja disparada
+    setSearchTerm(cli.name);
+    //onClientChange({ name: cli.name, id: cli.id });
+    setClients([]);
+
+    window.api.getReceiptsByClient(cli.id)
+      .then((response) => {
+        console.log(response);
+        if(response.success) {
+          const receipts = response.receipts;
+          updateFilteredReceipts(receipts);
+          console.log(receipts);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao procurar talão por cliente: ", error);
+      });
+  };
+
+  const handleChange = (value) => {
+    setSearchTerm(value);
+    setSelectedIndex(0);  // Resetar a seleção do item
+    setIsSelectingClient(false); // Resetar o flag para permitir a pesquisa
+  };
+
+  const handleKeyDown = (e) => {
+    if (searchType === "cliente") {
+      if (e.key === "Escape") {
+        setClients([]);
+        inputRef.current.blur();
+      }
+  
+      if (e.key === "Enter") {
+        if (clients.length !== 0) {
+          handleItemClick(clients[selectedIndex]);
+          inputRef.current.blur();
+        } else {
+          toast.warn("Cliente não existe.", {
+            position: "top-right",
+            autoClose: 3000,
+            className: "custom-warn-toast",
+            progressClassName: "custom-warn-progress",
+          });
+          setSearchTerm("");
+          //onClientChange([]);
+        }
+      }
+  
+      if (clients.length === 0) return;
+  
+      if (e.key === "ArrowDown") {
+        setSelectedIndex((prevIndex) => {
+          const newIndex = (prevIndex + 1) % clients.length;
+          scrollToItem(newIndex);
+          return newIndex;
+        });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((prevIndex) => {
+          const newIndex = (prevIndex - 1 + clients.length) % clients.length;
+          scrollToItem(newIndex);
+          return newIndex;
+        });
+      }
+    }
+  };
+
+  return (
+  <div className='h-full w-full grid grid-cols-3'>
+    {/* Lista de seleção do tipo de pesquisa */}
+    <div className='row-start-1 bg-[#E1E4F1] flex justify-center items-center flex-col w-full'>
+      <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
+        <p>Filtrar por:</p>
+      </div>
+      <div className="row-start-1 relative w-[70%] cursor-pointer">
+        <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptions}>
+          <input
+            type="text"
+            placeholder={""}
+            className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
+            value={searchType === "data" ? "Intervalo de Datas" : searchType === "id" ? "Número de Talão" : "Nome de Cliente"}
+            readOnly
+          />
+          <IoIosArrowDropdown className="size-6" />
+        </div>
+
+        {/* Lista de opções */}
+        {showOptions && (
+          <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
+            {["data", "id", "cliente"].map((option, index) => (
+              <li
+                key={index}
+                className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
+                  hover:bg-stone-400 hover:rounded-2xl ${searchType === option ? "bg-stone-400 rounded-2xl" : ""}`}
+                onClick={() => handleOptionSelect(option)}
+              >
+                <span>{option === "data" ? "Intervalo de Datas" : option === "id" ? "Número de Talão" : "Nome de Cliente"}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+
+    {/* Campo de Pesquisa */}
+    {searchType === "data" && (
+      <div className="h-full ml-1 flex-col flex justify-center">
+        <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
+          <p>Intervalo de Datas:</p>
+        </div>
+        <div className="flex space-x-4 w-[70%]">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm text-xl w-full"
+          />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm text-xl w-full"
+          />
+          <button
+            onClick={handleDateChange}
+            className="flex items-center bg-[#C1C0C0] rounded-2xl text-xl pl-1 pr-1 shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95"
+          >
+            Filtrar
+          </button>
         </div>
       </div>
+    )}
 
-{/* Campo de Pesquisa */}
-      {searchType === "data" && (
-        <div className="h-full ml-1 flex-col flex justify-center">
-          <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
-            <p>Intervalo de Datas:</p>
-          </div>
-          <div className="flex space-x-4 w-[70%]">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm text-xl w-full"
-            />
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm text-xl w-full"
-            />
-            <button
-              onClick={handleDateChange}
-              className="flex items-center bg-[#C1C0C0] rounded-2xl text-xl pl-1 pr-1 shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95"
-            >
-              Filtrar
-            </button>
-          </div>
+    {/* Campo de Pesquisa para ID ou Cliente */}
+    {(searchType === "id" || searchType === "cliente") && (
+      <div className="h-full ml-1 flex-col flex justify-center">
+        <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
+          <p>{`${searchType === "id" ? "Número de Talão:" : "Nome de Cliente:"}`}</p>
         </div>
-      )}
-
-      {/* Campo de Pesquisa para ID ou Cliente */}
-      {(searchType === "id" || searchType === "cliente") && (
-        <div className="h-full ml-1 flex-col flex justify-center">
-          <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
-            <p>{`${searchType === "id" ? "Número de Talão:" : "Nome de Cliente:"}`}</p>
+        <div className='relative w-[70%]'>
+          <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
+            <BiSearchAlt className="size-6" />
+            <input
+              ref={inputRef}
+              type="text"
+              name="searchTerm"
+              value={searchTerm}
+              onChange={(e) => handleChange(e.target.value)} // Atualiza o termo de pesquisa
+              onKeyDown={handleKeyDown}
+              placeholder={searchType === "id" ? "Procurar Talão..." : "Procurar Cliente..."}
+              className="bg-transparent border-none outline-none text-xl ml-1 w-full"
+            />
           </div>
-          <div className='relative w-[70%]'>
-            <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
-              <BiSearchAlt className="size-6" />
-              <input
-                ref={inputRef}
-                type="text"
-                name="searchTerm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)} // Atualiza o termo de pesquisa
-                placeholder={"Procurar Talão..."}
-                className="bg-transparent border-none outline-none text-xl ml-1 w-full"
-              />
-            </div>
+          {clients.length > 0 && (
+          <div className=" absolute top-full left-0 w-full bg-[#C1C0C0] flex flex-col items-center shadow-lg rounded-2xl mt-1 max-h-[200px] overflow-y-auto scrollbar-hidden z-50">
+            {clients.map((res, id) => {
+              const isHighlighted = id === selectedIndex;
+              return (
+                <div
+                  key={id}
+                  ref={(el) => (itemRefs.current[id] = el)}
+                  className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
+                    hover:bg-stone-400 hover:rounded-2xl ${
+                      isHighlighted ? "bg-stone-400 rounded-2xl" : ""
+                    }`}
+                    onClick={() => handleItemClick(res)}
+                >
+                  <span>
+                    {res.name} {"("}
+                  </span>
+                  <span className="opacity-50">{res.address}</span>
+                  <span>{")"}</span>
+                </div>
+              );
+            })}
+            
           </div>
+        )}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 };
 
 export default ReceiptFilters;
