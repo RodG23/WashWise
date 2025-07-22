@@ -18,8 +18,9 @@ import RefFilters from './components/RefFilters';
 import RefTable from './components/RefTable';
 import RefForm from './components/RefForm';
 
-import ReceipTable from './components/ReceiptTable';
+import ReceiptTable from './components/ReceiptTable';
 import ReceiptFilters from './components/ReceiptFilters'
+import ReceiptPreview from "./components/ReceiptPreview";
 
 import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
@@ -272,7 +273,10 @@ function App() {
                 <ReceiptFilters updateFilteredReceipts={updateFilteredReceipts}/>
               </div>
               <div className="col-span-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center pl-[10%]">
-                <ReceipTable filteredReceipts={filteredReceipts} updateFilteredReceipts={updateFilteredReceipts} selectedReceiptId={selectedReceiptEdit?.id} onReceiptSelect={handleReceiptSelectForEdit}/>
+                <ReceiptTable filteredReceipts={filteredReceipts} updateFilteredReceipts={updateFilteredReceipts} selectedReceiptId={selectedReceiptEdit?.id} onReceiptSelect={handleReceiptSelectForEdit}/>
+              </div>
+              <div className="col-span-3 col-start-4 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center pl-[10%] pr-[10%]">
+                <ReceiptPreview/>
               </div>
           </div>
           </>}

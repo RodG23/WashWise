@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BiSolidEditAlt } from "react-icons/bi";
+import { MdReadMore } from "react-icons/md";
 import { AiTwotoneDelete } from "react-icons/ai";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -67,16 +67,16 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
             <th className="w-3/24 p-2 font-normal text-left border-r-4 border-b-4 border-[#B8B8B8] pt-5 pb-5 pl-5">
               Nº
             </th>
-            <th className="w-1/6 p-2 font-normal text-left border-r-2 border-b-4 border-[#B8B8B8] pl-5">
+            <th className="w-1/6 p-2 font-normal text-center border-r-2 border-b-4 border-[#B8B8B8]">
               Cliente
             </th>
-            <th className="w-1/6 p-2 font-normal text-left border-r-2 border-b-4 border-[#B8B8B8] pl-5">
+            <th className="w-1/6 p-2 font-normal text-center border-r-2 border-b-4 border-[#B8B8B8]">
               Estado
             </th>
-            <th className="w-3/24 p-2 font-normal text-left border-r-2 border-b-4 border-[#B8B8B8] pl-5">
+            <th className="w-2/24 p-2 font-normal text-center border-r-2 border-b-4 border-[#B8B8B8]">
               Valor
             </th>
-            <th className="w-3/24 p-2 font-normal text-left border-r-0 border-b-4 border-[#B8B8B8] pl-5">
+            <th className="w-4/24 p-2 font-normal text-center border-r-0 border-b-4 border-[#B8B8B8]">
               Data
             </th>
             <th className="w-3/24 p-2 text-center border-b-4 border-[#B8B8B8]">
@@ -91,22 +91,22 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
               <td className="p-2 pl-5 text-3xl text-left font-normal border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%] cursor-default">
                 {receipt?.id || ""}
               </td>
-              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
-                todo
+              <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
+                {receipt?.name || ""}
               </td>
-              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
+              <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
                 {receipt?.state || ""}
               </td>
-              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
+              <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
                 {receipt?.total_price || ""}
               </td>
-              <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
-                {receipt?.state || ""}
+              <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
+                {receipt?.table_date || ""}
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
                 <div className="flex justify-end">
                   {receipt && (
-                    <BiSolidEditAlt
+                    <MdReadMore
                       className={`size-10 opacity-55 cursor-pointer hover:opacity-100 ${selectedReceiptId === receipt.id ? "text-blue-900 opacity-100" : "text-black"}`}
                       onClick={() => onReceiptSelect(receipt)} // Chama a função de seleção
                     />

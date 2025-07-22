@@ -470,8 +470,10 @@ ipcMain.handle("edit-ref", (event, product) => {
 ipcMain.handle("get-receipt-by-id", (event, receiptId) => {
   try {
     const query = `
-      SELECT * FROM receipts
-      WHERE id = ?
+      SELECT r.*, c.name
+      FROM receipts r
+      INNER JOIN clients c ON r.client_id = c.id
+      WHERE r.id = ?
     `;
     const receipt = db.prepare(query).get(receiptId);
 
@@ -489,8 +491,9 @@ ipcMain.handle("get-receipt-by-id", (event, receiptId) => {
 ipcMain.handle("get-receipts-by-client", (event, clientId) => {
   try {
     const query = `
-      SELECT r.*
+      SELECT r.*, c.name
       FROM receipts r
+      INNER JOIN clients c ON r.client_id = c.id
       WHERE r.client_id = ?
     `;
     const receipts = db.prepare(query).all(clientId);
@@ -512,7 +515,9 @@ ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
     const formattedEndDate = endDate + " 23:59:59";   // Data de fim com hora final
 
     const query = `
-      SELECT * FROM receipts
+      SELECT r.*, c.name 
+      FROM receipts r
+      INNER JOIN clients c ON r.client_id = c.id
       WHERE created_at BETWEEN ? AND ?
     `;
     const receipts = db.prepare(query).all(formattedStartDate, formattedEndDate);

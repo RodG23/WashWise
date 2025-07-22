@@ -5,7 +5,8 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 //todo adicionar verificação de erros em todas (outras abas tambem) as pesquisas para destinguir demora de inexistencia de match quando da erro limpar tabelas em todas as abas
-//todo organizar tabela para mostrar as infos dos taloes
+//todo adicionar filtro por estado na data e cliente
+//todo adicionar euro na tabela e recibo
 
 // Função para filtrar os clientes
 const ReceiptFilters = ({ updateFilteredReceipts }) => {
@@ -35,6 +36,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
     inputRef.current?.focus();
     updateFilteredReceipts([]);
     setClients([]);
+    setInitialDates();
   };
 
   // Foco no input após mudança de searchType
@@ -50,8 +52,9 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
         .then((response) => {
           console.log(response);
           if(response.success) {
-            const receipt = response.receipt;
-            updateFilteredReceipts([receipt]);
+            const receipt = [response.receipt];
+            receipt.forEach(setReceiptDate);
+            updateFilteredReceipts(receipt);
             //console.log(receipt);
           } else {
             updateFilteredReceipts([]);
@@ -83,6 +86,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
         .then((response) => {
           if(response.success) {
             const receipts = response.receipts;
+            receipts.forEach(setReceiptDate);
             updateFilteredReceipts(receipts);
             //console.log(receipts);
           } else {
@@ -94,6 +98,12 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
         });
     }
   };
+
+  const setReceiptDate = (receipt) => {
+    const [datePart] = receipt.created_at.split(" "); // separa a data da hora
+    const [year, month, day] = datePart.split("-");
+    receipt.table_date = `${day}-${month}-${year}`;
+  }
 
   // Definir a data inicial e final para hoje
   const setInitialDates = () => {
@@ -155,6 +165,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
         console.log(response);
         if(response.success) {
           const receipts = response.receipts;
+          receipts.forEach(setReceiptDate);
           updateFilteredReceipts(receipts);
           console.log(receipts);
         }
