@@ -25,7 +25,6 @@ const QuantitySelector = forwardRef(({ clearInputTrigger, onQuantityChange, refS
     onQuantityChange(newValue);
   };
 
-
   const handleChange = (e) => {
     const value = e.target.value;
     if (value === "" || /^[0-9]+$/.test(value)) {

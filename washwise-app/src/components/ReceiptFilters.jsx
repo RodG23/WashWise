@@ -5,8 +5,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 //todo adicionar verificação de erros em todas (outras abas tambem) as pesquisas para destinguir demora de inexistencia de match quando da erro limpar tabelas em todas as abas
-//todo adicionar filtro por estado na data e cliente
-//todo adicionar euro na tabela e recibo
+//todo adicionar filtro por estado na data e cliente pri:1
 
 // Função para filtrar os clientes
 const ReceiptFilters = ({ updateFilteredReceipts }) => {
@@ -85,7 +84,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
       window.api.getReceiptsByDate(startDate, endDate) 
         .then((response) => {
           if(response.success) {
-            const receipts = response.receipts;
+            const receipts = response.receipts.reverse();
             receipts.forEach(setReceiptDate);
             updateFilteredReceipts(receipts);
             //console.log(receipts);
@@ -100,9 +99,10 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
   };
 
   const setReceiptDate = (receipt) => {
-    const [datePart] = receipt.created_at.split(" "); // separa a data da hora
+    const [datePart, hourPart] = receipt.created_at.split(" "); // separa a data da hora
     const [year, month, day] = datePart.split("-");
     receipt.table_date = `${day}-${month}-${year}`;
+    receipt.table_hour = hourPart;
   }
 
   // Definir a data inicial e final para hoje
@@ -164,7 +164,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
       .then((response) => {
         console.log(response);
         if(response.success) {
-          const receipts = response.receipts;
+          const receipts = response.receipts.reverse();
           receipts.forEach(setReceiptDate);
           updateFilteredReceipts(receipts);
           console.log(receipts);

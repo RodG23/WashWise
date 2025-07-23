@@ -47,6 +47,7 @@ const ClientFilters = ({ updateFilteredClients }) => {
     } else if (searchType === "number") {
       window.api.getClientesSearchNumber(debouncedTerm) // Pesquisa por número de telefone
         .then((clientes) => {
+          clientes.sort((a, b) => a.name.localeCompare(b.name));
           updateFilteredClients(clientes);
         })
         .catch((error) => {
