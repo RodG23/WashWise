@@ -98,7 +98,7 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
                 {receipt?.state || ""}
               </td>
               <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
-                {receipt?.total_price || ""}
+                {receipt ? `${receipt.total_price}€` : ""}
               </td>
               <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
                 {receipt?.table_date || ""}

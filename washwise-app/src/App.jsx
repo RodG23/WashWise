@@ -276,7 +276,7 @@ function App() {
                 <ReceiptTable filteredReceipts={filteredReceipts} updateFilteredReceipts={updateFilteredReceipts} selectedReceiptId={selectedReceiptEdit?.id} onReceiptSelect={handleReceiptSelectForEdit}/>
               </div>
               <div className="col-span-3 col-start-4 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center pl-[10%] pr-[10%]">
-                <ReceiptPreview/>
+                <ReceiptPreview selectedReceiptEdit={selectedReceiptEdit} isEditing={selectedReceiptEdit !== null} handleNewReceipt={handleNewReceipt} updateFilteredReceipts={updateFilteredReceipts} activeTab={activeTab}/>
               </div>
           </div>
           </>}
