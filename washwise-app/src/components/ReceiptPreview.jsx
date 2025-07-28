@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { BiSolidEditAlt } from "react-icons/bi";
-import { AiTwotoneDelete } from "react-icons/ai";
+import { IoIosArrowDropdown } from "react-icons/io";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 //todo mudar valor, guardar salva tudo
-//todo mudar estado ocupar os dois da esquerda e meter botoes ou dropdown, guardar salva tudo pri:1
+//todo ver comportamento de checkbox, e relação com bd
+//todo mudar estado ocupar os dois da esquerda e meter botoes ou dropdown, guardar salva tudo. pri:1
 //todo verificar valor ao tirar o foco
 
 const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, updateFilteredReceipts, activeTab }) => {
 
     const [value, setValue] = useState(0);
-
     const numberOfLinesToRender = 5;
+    const [showOptionsState, setShowOptionsState] = useState(false); // Controla se as opções estão visíveis na mudança de estado
+    const [editingState, setEditingState] = useState("");
 
     let products = [];
     if (selectedReceiptEdit?.products_list) {
@@ -26,6 +27,12 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
         }
     }
 
+    useEffect(() => {
+        if (activeTab !== "Talões") {
+          handleNewReceipt();
+        }
+    }, [activeTab]);
+
     const receiptsWithEmptyRows = [
         ...products,
         ...Array(Math.max(0, numberOfLinesToRender - products.length)).fill(null),
@@ -38,11 +45,20 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
     useEffect(() => {
         if (isEditing) {
             setValue(selectedReceiptEdit.total_price);
+            setEditingState(selectedReceiptEdit.state);
         } else {
             setValue(0);
         }
     }, [selectedReceiptEdit]);
 
+    const toggleOptionsState = () => {
+        setShowOptionsState(!showOptionsState);
+    };
+
+    const handleOptionSelectState = (option) => {
+        setShowOptionsState(false);
+        
+    };
 
     return (
         <div className="grid grid-cols-2 grid-rows-11 bg-white h-[90%] w-[70%] rounded-2xl ">
@@ -117,22 +133,48 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                 </table>
             </div>
             </div>
-            <div className="flex justify-center items-center gap-1 text-xl pr-4">
-                <p className="font-bold">Estado:</p>
-                {selectedReceiptEdit?.state || ""}               
+            <div className="flex justify-center items-center gap-1 text-xl pr-4 row-start-10 row-span-2">
+                <div className="flex-col flex justify-center items-start">
+                    <div className='flex justify-center items-start flex-col w-full'>
+                        <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
+                        <p>Estado:</p>
+                        </div>
+                        <div className="row-start-1 relative w-[70%] cursor-pointer">
+                        <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptionsState}>
+                            <input
+                            type="text"
+                            placeholder={""}
+                            className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
+                            value={selectedReceiptEdit?.state || ""}
+                            readOnly
+                            />
+                            <IoIosArrowDropdown className="size-6" />
+                        </div>
+            
+                        {/* Lista de opções */}
+                        {showOptionsState && (
+                            <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
+                            {["pendente", "pago", "entregue"].map((option, index) => (
+                                <li
+                                key={index}
+                                className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
+                                    hover:bg-stone-400 hover:rounded-2xl ${editingState === option ? "bg-stone-400 rounded-2xl" : ""}`}
+                                onClick={() => handleOptionSelectState(option)}
+                                >
+                                <span>{option === "pendente" ? "Pendente" : option === "pago" ? "Pago" : "Entregue"}</span>
+                                </li>
+                            ))}
+                            </ul>
+                        )}
+                        </div>
+                    </div>
+                </div>
             </div>
             <div className="gap-1 flex justify-center items-center text-xl pl-4">
                 <p className="font-bold">Levantamento:</p>  
                 {selectedReceiptEdit?.date || ""}
             </div>
-            <div className="flex justify-center items-start">
-                <button
-                    //onClick={handleDateChange}
-                    className="flex items-center w-[70%] h-[80%] bg-[#C1C0C0] rounded-2xl text-xl shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95">
-                    Entregue
-                </button>              
-            </div>
-            <div className="flex justify-center items-start">
+            <div className="flex justify-center items-start col-start-2">
                 <button
                     //onClick={handleDateChange}
                     className="flex items-center w-[70%] h-[80%] bg-[#C1C0C0] rounded-2xl text-xl shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95">

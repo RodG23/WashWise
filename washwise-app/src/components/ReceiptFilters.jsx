@@ -5,13 +5,14 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 //todo adicionar verificação de erros em todas (outras abas tambem) as pesquisas para destinguir demora de inexistencia de match quando da erro limpar tabelas em todas as abas
-//todo adicionar filtro por estado na data e cliente pri:1
 
 // Função para filtrar os clientes
 const ReceiptFilters = ({ updateFilteredReceipts }) => {
   const [searchType, setSearchType] = useState("data"); // Tipo de filtro selecionado
+  const [searchTypeState, setSearchTypeState] = useState("todos"); // Tipo de filtro selecionado
   const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
   const [showOptions, setShowOptions] = useState(false); // Controla se as opções estão visíveis
+  const [showOptionsState, setShowOptionsState] = useState(false); // Controla se as opções estão visíveis no filtro de estado
   const inputRef = useRef(null); // Ref para o campo de pesquisa
   const [debouncedTerm, setDebouncedTerm] = useState(searchTerm); // Termo de pesquisa com debounce
   const [startDate, setStartDate] = useState(""); // Data inicial
@@ -20,11 +21,30 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
   const [selectedIndex, setSelectedIndex] = useState(0); //indice selecionado na pesquisa de cliente
   const itemRefs = useRef([]); //lista de pesquisa mostrada
   const [isSelectingClient, setIsSelectingClient] = useState(false); // Flag para impedir nova pesquisa ao selecionar cliente por causa do debounce
+  const [receiptsAllStates, setReceiptsAllStates] = useState([]);
   
+  const handleStates = (receipts) => {
+    //console.log(searchTypeState);
+    //console.log(receiptsAllStates);
+    //console.log(receipts);
+    if (searchTypeState === "todos") {
+      updateFilteredReceipts(receipts);
+    } else {
+      updateFilteredReceipts(receipts.filter(r => r.state === searchTypeState));
+    }
+  }
+
+  useEffect(() => {
+    handleStates(receiptsAllStates);
+  }, [searchTypeState]); // Aplica o foco sempre que searchType mudar
 
   // Função para alternar entre as opções
   const toggleOptions = () => {
     setShowOptions(!showOptions);
+  };
+
+  const toggleOptionsState = () => {
+    setShowOptionsState(!showOptionsState);
   };
 
   // Função para selecionar o tipo de pesquisa
@@ -33,9 +53,16 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
     setShowOptions(false);
     setSearchTerm("");
     inputRef.current?.focus();
+    setReceiptsAllStates([]);
     updateFilteredReceipts([]);
     setClients([]);
     setInitialDates();
+    setSearchTypeState("todos");
+  };
+
+  const handleOptionSelectState = (option) => {
+    setSearchTypeState(option);
+    setShowOptionsState(false);
   };
 
   // Foco no input após mudança de searchType
@@ -80,15 +107,16 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
   const handleDateChange = () => {
     if (startDate && endDate) {
       //todo fazer aqui as verificacoes
-      //todo verificar formato de data valido antes de ir a bd  ( numero de digitos ) e inicial anterior a final
       window.api.getReceiptsByDate(startDate, endDate) 
         .then((response) => {
           if(response.success) {
             const receipts = response.receipts.reverse();
             receipts.forEach(setReceiptDate);
-            updateFilteredReceipts(receipts);
+            setReceiptsAllStates(receipts);
+            handleStates(receipts);
             //console.log(receipts);
           } else {
+            setReceiptsAllStates([]);
             updateFilteredReceipts([]);
           }
         })
@@ -133,6 +161,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
         if(searchType === "cliente") {
         setClients([]);
         }
+      setReceiptsAllStates([]);
       updateFilteredReceipts([]); 
       }
     }
@@ -166,7 +195,8 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
         if(response.success) {
           const receipts = response.receipts.reverse();
           receipts.forEach(setReceiptDate);
-          updateFilteredReceipts(receipts);
+          setReceiptsAllStates(receipts);
+          handleStates(receipts);
           console.log(receipts);
         }
       })
@@ -334,6 +364,45 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
             
           </div>
         )}
+        </div>
+      </div>
+    )}
+
+    {/* Terceira coluna: dropdown apenas se o tipo de pesquisa não for "id" */}
+    {searchType !== "id" && (
+      <div className="bg-[#E1E4F1] flex-col flex justify-center items-start col-start-3">
+        <div className='row-start-1 bg-[#E1E4F1] flex justify-center items-start flex-col w-full'>
+          <div className="flex w-[30%] text-3xl mt-3 mb-1 overflow-clip">
+            <p>Estado:</p>
+          </div>
+          <div className="row-start-1 relative w-[30%] cursor-pointer">
+            <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptionsState}>
+              <input
+                type="text"
+                placeholder={""}
+                className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
+                value={searchTypeState === "todos" ? "Todos" : searchTypeState === "pendente" ? "Pendente" : searchTypeState === "pago" ? "Pago" : "Entregue"}
+                readOnly
+              />
+              <IoIosArrowDropdown className="size-6" />
+            </div>
+
+            {/* Lista de opções */}
+            {showOptionsState && (
+              <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
+                {["todos", "pendente", "pago", "entregue"].map((option, index) => (
+                  <li
+                    key={index}
+                    className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
+                      hover:bg-stone-400 hover:rounded-2xl ${searchTypeState === option ? "bg-stone-400 rounded-2xl" : ""}`}
+                    onClick={() => handleOptionSelectState(option)}
+                  >
+                    <span>{option === "todos" ? "Todos" : option === "pendente" ? "Pendente" : option === "pago" ? "Pago" : "Entregue"}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     )}
