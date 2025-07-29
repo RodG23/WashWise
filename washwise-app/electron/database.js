@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, "../washwise.db");
 const db = new Database(dbPath);
 
-//todo obrigar o estado do recibo a ser um enum ou meter caps
+//todo obrigar o estado do recibo a ser um enum E meter caps
 
 // Criar tabelas se não existirem
 db.exec(`
