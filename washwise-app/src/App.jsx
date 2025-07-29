@@ -97,7 +97,7 @@ function App() {
   //adiciona item talao
   const addItem = () => {
     if (ref && quantity) {
-      const newItem = { ...ref, quantity };
+      const newItem = { ...ref, quantity, bagged: false };
       setItems((prevItems) => [...prevItems, newItem]);
       setRef("");
       setQuantity("1");

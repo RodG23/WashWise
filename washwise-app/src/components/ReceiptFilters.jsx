@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 //todo adicionar verificação de erros em todas (outras abas tambem) as pesquisas para destinguir demora de inexistencia de match quando da erro limpar tabelas em todas as abas
+//todo verificar todos os inputs
 
 // Função para filtrar os clientes
 const ReceiptFilters = ({ updateFilteredReceipts }) => {
@@ -106,7 +107,6 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
   // Função para lidar com o intervalo de datas
   const handleDateChange = () => {
     if (startDate && endDate) {
-      //todo fazer aqui as verificacoes
       window.api.getReceiptsByDate(startDate, endDate) 
         .then((response) => {
           if(response.success) {

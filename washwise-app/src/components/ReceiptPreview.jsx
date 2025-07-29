@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { IoIosArrowDropdown } from "react-icons/io";
+import { IoIosArrowDropup } from "react-icons/io";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//todo mudar valor, guardar salva tudo
-//todo ver comportamento de checkbox, e relação com bd
-//todo mudar estado ocupar os dois da esquerda e meter botoes ou dropdown, guardar salva tudo. pri:1
-//todo verificar valor ao tirar o foco
+//todo guardar salva tudo. pri:1
 
 const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, updateFilteredReceipts, activeTab }) => {
 
-    const [value, setValue] = useState(0);
+    const [value, setValue] = useState(0); //Guarda valor da edição
     const numberOfLinesToRender = 5;
     const [showOptionsState, setShowOptionsState] = useState(false); // Controla se as opções estão visíveis na mudança de estado
-    const [editingState, setEditingState] = useState("");
+    const [editingState, setEditingState] = useState(""); //Guarda estado do talao a ser editado
 
     let products = [];
     if (selectedReceiptEdit?.products_list) {
@@ -30,6 +27,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
     useEffect(() => {
         if (activeTab !== "Talões") {
           handleNewReceipt();
+          //setEditingState("");
         }
     }, [activeTab]);
 
@@ -42,22 +40,45 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
         setValue(value);
     };
 
+    const handleBlur = () => {
+        const floatValue = parseFloat(Number(value));
+        if (isNaN(floatValue) || floatValue < 0) {
+            setValue(-1);
+            toast.warn("Valor inválido.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "custom-warn-toast",
+                    progressClassName: "custom-warn-progress",
+            });
+        }
+    };
+
     useEffect(() => {
         if (isEditing) {
             setValue(selectedReceiptEdit.total_price);
             setEditingState(selectedReceiptEdit.state);
         } else {
             setValue(0);
+            setEditingState("");
         }
     }, [selectedReceiptEdit]);
 
     const toggleOptionsState = () => {
-        setShowOptionsState(!showOptionsState);
+        if(isEditing) {
+            setShowOptionsState(!showOptionsState);
+        }
     };
 
     const handleOptionSelectState = (option) => {
         setShowOptionsState(false);
-        
+        setEditingState(option);
+    };
+
+    const handleCheckboxChange = (index) => {
+        products[index] = {
+            ...products[index],
+            bagged: !products[index].bagged
+        };
     };
 
     return (
@@ -91,6 +112,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                         className="bg-transparent border-none outline-1 outline-[#B8B8B8] text-xl w-auto p-0 text-right"
                         value={value}
                         onChange={(e) => handleChange(e.target.value)}
+                        onBlur={handleBlur}
                     />
                 </div>
             </div>
@@ -124,6 +146,8 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                             <input
                             type="checkbox"
                             className="size-5 accent-[#928181] ring-1 ring-[#928181] rounded-2xl"
+                            checked={receipt.bagged}
+                            onChange={() => handleCheckboxChange(index)}
                             />
                         ) : null}
                         </td>
@@ -133,27 +157,28 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                 </table>
             </div>
             </div>
-            <div className="flex justify-center items-center gap-1 text-xl pr-4 row-start-10 row-span-2">
-                <div className="flex-col flex justify-center items-start">
-                    <div className='flex justify-center items-start flex-col w-full'>
-                        <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
+            <div className="justify-center items-center gap-1 text-xl row-start-10 row-span-2 grid grid-rows-2">
+                <div className="gap-1 flex justify-center items-center text-xl pr-4 font-bold h-full ">
                         <p>Estado:</p>
-                        </div>
-                        <div className="row-start-1 relative w-[70%] cursor-pointer">
-                        <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptionsState}>
+                </div>
+                <div className="flex-col flex w-full h-full">
+                    <div className='flex justify-center items-center flex-col w-full'>
+                        
+                        <div className="row-start-1 relative w-[70%] cursor-pointer shadow-md rounded-2xl border-2 border-[#928787] bg-[#C1C0C0]">
+                        <div className="rounded-2xl p-3 flex items-center" onClick={toggleOptionsState}>
                             <input
                             type="text"
                             placeholder={""}
-                            className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
-                            value={selectedReceiptEdit?.state || ""}
+                            className="bg-transparent border-none outline-none text-xl ml-1 cursor-pointer flex items-center w-full h-full justify-center overflow-clip border-2"
+                            value={editingState || ""}
                             readOnly
                             />
-                            <IoIosArrowDropdown className="size-6" />
+                            <IoIosArrowDropup className="size-6" />
                         </div>
             
                         {/* Lista de opções */}
                         {showOptionsState && (
-                            <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
+                            <ul className="absolute bottom-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
                             {["pendente", "pago", "entregue"].map((option, index) => (
                                 <li
                                 key={index}
