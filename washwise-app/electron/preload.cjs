@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld("api", {
     getReceiptById: (receiptId) => ipcRenderer.invoke("get-receipt-by-id", receiptId),
     getReceiptsByDate: (startDate, endDate) => ipcRenderer.invoke("get-receipts-by-date", startDate, endDate),
     getReceiptsByClient: (clientId) => ipcRenderer.invoke("get-receipts-by-client", clientId),
+    editReceipt: (updatedFields) => ipcRenderer.invoke("edit-receipt", updatedFields),
+    removeReceipt: (receiptId) => ipcRenderer.invoke("remove-receipt", receiptId),
   });

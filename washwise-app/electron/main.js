@@ -4,7 +4,11 @@ import { fileURLToPath } from "url";
 import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 
-//todo verificar funcoes que estao a ser passadas para o front mas nao usadas
+//todo verificar funcoes que estao a ser passadas para o front mas nao usadas pri:2
+//todo bloquear tamanho pri:3
+//todo botao pri:3
+//todo escolher impressora pri:4
+//todo indices bd pri:1
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -533,6 +537,49 @@ ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
   }
 });
 
+ipcMain.handle("edit-receipt", (event, updatedFields) => {
 
+  // Verifica se todos os campos necessários foram preenchidos
+  if (!updatedFields.total_price || !updatedFields.products_list || !updatedFields.state || !updatedFields.id) {
+    return { success: false, message: "Por favor, preencha todos os campos." };
+  }    
+  
+  try {
+
+    const stmt = db.prepare(`
+      UPDATE receipts
+      SET total_price = ?, products_list = ?, state = ?
+      WHERE id = ?
+    `);
+
+    const result = stmt.run(updatedFields.total_price, updatedFields.products_list, updatedFields.state, updatedFields.id);
+
+    // Verifica se a atualização foi bem-sucedida
+    if (result.changes > 0) {
+      return { success: true, message: "Talão editado com sucesso!" };
+    } else {
+      return { success: false, message: "Erro ao editar talão." };
+    }
+  } catch (error) {
+    console.error("Erro ao editar talão:", error);
+    return { success: false, message: "Erro ao editar talão." };
+  }
+});
+
+ipcMain.handle("remove-receipt", async (event, receiptId) => {
+  try {
+    const query = db.prepare("DELETE FROM receipts WHERE id = ?");
+    const result = query.run(receiptId);
+
+    // Verifica se a exclusão foi bem-sucedida
+    if (result.changes > 0) {
+      return { success: true, message: "Talão excluído com sucesso!" };
+    } else {
+      return { success: false, message: "Talão não encontrado." };
+    }
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+});
 
 
