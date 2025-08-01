@@ -3,37 +3,23 @@ import { IoIosArrowDropup } from "react-icons/io";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//todo guardar salva tudo. pri:1
-
 const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, updateFilteredReceipts, activeTab }) => {
 
     const [value, setValue] = useState(0); //Guarda valor da edição
     const numberOfLinesToRender = 5;
     const [showOptionsState, setShowOptionsState] = useState(false); // Controla se as opções estão visíveis na mudança de estado
     const [editingState, setEditingState] = useState(""); //Guarda estado do talao a ser editado
-
-    let products = [];
-    if (selectedReceiptEdit?.products_list) {
-        try {
-            products = typeof selectedReceiptEdit.products_list === "string"
-                ? JSON.parse(selectedReceiptEdit.products_list)
-                : selectedReceiptEdit.products_list;
-        } catch (e) {
-            console.error("Erro a fazer parse dos produtos:", e);
-            products = [];
-        }
-    }
+    const [productsState, setProductsState] = useState([]);
 
     useEffect(() => {
         if (activeTab !== "Talões") {
           handleNewReceipt();
-          //setEditingState("");
         }
     }, [activeTab]);
 
     const receiptsWithEmptyRows = [
-        ...products,
-        ...Array(Math.max(0, numberOfLinesToRender - products.length)).fill(null),
+        ...productsState,
+        ...Array(Math.max(0, numberOfLinesToRender - productsState.length)).fill(null),
     ];
 
     const handleChange = (value) => {
@@ -50,16 +36,30 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                     className: "custom-warn-toast",
                     progressClassName: "custom-warn-progress",
             });
+        } else {
+            setValue(floatValue);
         }
     };
 
     useEffect(() => {
+        if (selectedReceiptEdit?.products_list) {
+            try {
+            const parsed = typeof selectedReceiptEdit.products_list === "string"
+                ? JSON.parse(selectedReceiptEdit.products_list)
+                : selectedReceiptEdit.products_list;
+            setProductsState(parsed);
+            } catch (e) {
+            console.error("Erro a fazer parse dos produtos:", e);
+            setProductsState([]);
+            }
+        }
         if (isEditing) {
             setValue(selectedReceiptEdit.total_price);
             setEditingState(selectedReceiptEdit.state);
         } else {
             setValue(0);
             setEditingState("");
+            setProductsState([]); 
         }
     }, [selectedReceiptEdit]);
 
@@ -75,10 +75,41 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
     };
 
     const handleCheckboxChange = (index) => {
-        products[index] = {
-            ...products[index],
-            bagged: !products[index].bagged
+    setProductsState(prev => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], bagged: !updated[index].bagged };
+        return updated;
+    });
+    };
+
+    const handleSave = () => {
+        const updatedFields = {
+            id: selectedReceiptEdit.id,
+            total_price: value,
+            products_list: JSON.stringify(productsState),
+            state: editingState,
         };
+        window.api.editReceipt(updatedFields)
+        .then(response => {
+            if (response.success) {
+            toast.success(response.message ,{
+                toastId: "edit-receipt-success",
+            });
+            updateFilteredReceipts(prevReceipts => prevReceipts.map(receipt => receipt.id === selectedReceiptEdit.id ? {...receipt, total_price: value, products_list: JSON.stringify(productsState), state: editingState,} : receipt));
+            } else {
+            toast.warn(response.message, {
+                position: "top-right",
+                autoClose: 3000,
+                className: "custom-warn-toast",
+                progressClassName: "custom-warn-progress",
+            });
+            }
+        })
+        .catch(error => {
+            console.error("Erro ao editar cliente:", error);
+        });
+        // Limpar campos após salvar
+        handleNewReceipt();
     };
 
     return (
@@ -161,15 +192,14 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                 <div className="gap-1 flex justify-center items-center text-xl pr-4 font-bold h-full ">
                         <p>Estado:</p>
                 </div>
-                <div className="flex-col flex w-full h-full">
-                    <div className='flex justify-center items-center flex-col w-full'>
-                        
+                <div className="flex-col flex w-full h-[100%]">
+                    <div className='flex justify-center items-center flex-col'>
                         <div className="row-start-1 relative w-[70%] cursor-pointer shadow-md rounded-2xl border-2 border-[#928787] bg-[#C1C0C0]">
-                        <div className="rounded-2xl p-3 flex items-center" onClick={toggleOptionsState}>
+                        <div className="rounded-2xl p-3 flex items-center " onClick={toggleOptionsState}>
                             <input
                             type="text"
                             placeholder={""}
-                            className="bg-transparent border-none outline-none text-xl ml-1 cursor-pointer flex items-center w-full h-full justify-center overflow-clip border-2"
+                            className="bg-transparent border-none outline-none text-2xl ml-1 cursor-pointer flex items-center w-full h-full justify-center overflow-clip border-2"
                             value={editingState || ""}
                             readOnly
                             />
@@ -201,8 +231,8 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
             </div>
             <div className="flex justify-center items-start col-start-2">
                 <button
-                    //onClick={handleDateChange}
-                    className="flex items-center w-[70%] h-[80%] bg-[#C1C0C0] rounded-2xl text-xl shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95">
+                    onClick={handleSave}
+                    className="flex items-center w-[70%] h-[80%] bg-[#C1C0C0] rounded-2xl text-2xl shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95">
                     Guardar
                 </button>               
             </div>
