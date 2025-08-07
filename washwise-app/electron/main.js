@@ -8,7 +8,6 @@ import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-ther
 //todo bloquear tamanho pri:3
 //todo botao pri:3
 //todo escolher impressora pri:4
-//todo indices bd pri:1
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

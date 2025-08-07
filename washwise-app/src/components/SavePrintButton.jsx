@@ -43,7 +43,7 @@ const SavePrintButton = ({ onSave, client, items, checkbox }) => {
       client_id: client.id,
       client_name: client.name,
       products: items,
-      state: "pendente",
+      state: "Pendente",
       total_price: items.reduce((total, item) => total + item.price * item.quantity, 0),
       date: check
     };

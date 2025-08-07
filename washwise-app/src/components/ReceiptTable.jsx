@@ -4,8 +4,6 @@ import { AiTwotoneDelete } from "react-icons/ai";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//todo apagar talao.
-
 const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceiptId, onReceiptSelect }) => {
   const numberOfReceiptsToRender = 8;
 

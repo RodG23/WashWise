@@ -42,7 +42,7 @@ const SaveButton = ({ onSave, client, items, checkbox }) => {
     const receipt = {
       client_id: client.id,
       products: items,
-      state: "pendente",
+      state: "Pendente",
       total_price: items.reduce((total, item) => total + item.price * item.quantity, 0),
       date: check
     };
