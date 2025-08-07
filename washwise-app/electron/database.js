@@ -1,12 +1,14 @@
 import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
+import { app } from "electron";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Caminho para a base de dados no diretório do Electron
-const dbPath = path.join(__dirname, "../washwise.db");
+const userDataPath = app.getPath("userData");
+const dbPath = path.join(userDataPath, "washwise.db");
 const db = new Database(dbPath);
 
 // Criar tabelas se não existirem

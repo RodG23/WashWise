@@ -115,7 +115,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
     return (
         <div className="grid grid-cols-2 grid-rows-11 bg-white h-[90%] w-[70%] rounded-2xl ">
             <div className= "col-span-2 row-span-2 flex justify-center items-center">
-                  <img src="../logo.png" alt="Logo" className="w-[80%] h-[80%] object-contain" />
+                  <img src="../renderer/logo.png" alt="Logo" className="w-[80%] h-[80%] object-contain" />
             </div>
             <div className="col-span-2 row-span-2 grid grid-cols-2 grid-rows-3">
                 <div className= "pl-4 row-span-2 flex-col">
