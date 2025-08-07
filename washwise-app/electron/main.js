@@ -4,12 +4,14 @@ import { fileURLToPath } from "url";
 import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 import { screen } from "electron";
+import fs from 'fs';
 
 //todo botao pri:3
 //todo escolher impressora pri:4
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isDev = !app.isPackaged;
 
 function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -26,10 +28,21 @@ function createWindow() {
     resizable: false,
     autoHideMenuBar: true,
     show: true,
-    icon: path.join(__dirname, "../public/ww_logo_t.png"),
+    icon: path.join(app.getAppPath(), '../renderer', 'ww_logo_t.png'),
   });
 
-  splash.loadFile(path.join(__dirname, "splash.html"));
+  // Caminho absoluto da imagem
+  const logoBase64 = fs.readFileSync(path.join(app.getAppPath(), '../renderer', 'ww_logo_s.png')).toString('base64')
+
+
+  // HTML inline do splash
+  const splashHTML = `
+    <html><body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;">
+      <img src="data:image/png;base64,${logoBase64}" style="width:400px;height:400px;object-fit:contain" />
+    </body></html>
+  `
+
+  splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHTML))
 
   let mainWindow = new BrowserWindow({
     width,
@@ -41,7 +54,7 @@ function createWindow() {
     minimizable: true,
     maximizable: false,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, "../public/ww_logo_t.png"),
+    icon: path.join(app.getAppPath(), '../renderer', 'ww_logo_t.png'),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -50,7 +63,13 @@ function createWindow() {
   });
 
   // Carrega o frontend Vite (ou ficheiro estático em produção)
-  mainWindow.loadURL("http://localhost:5173");
+  if (isDev) {
+    mainWindow.loadURL("http://localhost:5173");
+  } else {
+    mainWindow.loadFile(path.join(app.getAppPath(), '../renderer', 'index.html'));
+  }
+
+  //mainWindow.webContents.openDevTools();
 
   // Quando estiver pronto, mostra e fecha o splash
   mainWindow.webContents.on("did-finish-load", () => {
@@ -66,7 +85,6 @@ function createWindow() {
     mainWindow = null;
   });
 }
-
 
 app.whenReady().then(createWindow);
 
@@ -119,7 +137,7 @@ async function printReceipt(receipt) {
     console.log('Printer connected:', isConnected);
   
     printer.alignCenter();
-    await printer.printImage("public/logo_.png");
+    await printer.printImage(path.join(app.getAppPath(), '../renderer', 'ww_logo_t.png'));
     printer.newLine();
     printer.newLine();
 
