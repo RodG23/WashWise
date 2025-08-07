@@ -4,7 +4,6 @@ import { fileURLToPath } from "url";
 import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 
-//todo verificar funcoes que estao a ser passadas para o front mas nao usadas pri:2
 //todo bloquear tamanho pri:3
 //todo botao pri:3
 //todo escolher impressora pri:4
@@ -208,14 +207,6 @@ async function printReceipt(receipt) {
 
 
 //operações de clientes
-ipcMain.handle("get-clientes", () => {
-    return db.prepare("SELECT * FROM clients").all();
-  });
-
-ipcMain.handle("get-clientes-search", () => {
-  return db.prepare("SELECT id, name, address FROM clients").all();
-});
-
 ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
   const query = "SELECT id, name, number, address FROM clients WHERE name LIKE ?";
   return db.prepare(query).all(`%${searchTerm}%`);
@@ -249,10 +240,8 @@ ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
   return db.prepare(query).all(`${searchTerm}%`);
 });
 
-ipcMain.handle("get-refs", () => {
-  return db.prepare("SELECT * FROM products").all();
-});
 
+//operações de produtos
 ipcMain.handle("save-receipt", async (event, receipt) => {
   return saveReceipt(receipt);
 });
