@@ -3,34 +3,72 @@ import path from "path";
 import { fileURLToPath } from "url";
 import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
+import { screen } from "electron";
 
-//todo bloquear tamanho pri:3
 //todo botao pri:3
 //todo escolher impressora pri:4
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function createWindow() {
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.size;
 
-let mainWindow;
+  // Splash window
+  const splash = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    transparent: false,
+    alwaysOnTop: true,
+    center: true,
+    resizable: false,
+    autoHideMenuBar: true,
+    show: true,
+    icon: path.join(__dirname, "../public/ww_logo_t.png"),
+  });
 
-app.whenReady().then(() => {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+  splash.loadFile(path.join(__dirname, "splash.html"));
+
+  let mainWindow = new BrowserWindow({
+    width,
+    height,
+    x: 0,
+    y: 0,
+    show: false,
+    resizable: false,
+    minimizable: true,
+    maximizable: false,
+    autoHideMenuBar: true,
+    icon: path.join(__dirname, "../public/ww_logo_t.png"),
     webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"), // Comunicação segura
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: true,
     },
   });
-  mainWindow.webContents.openDevTools();
-  mainWindow.loadURL("http://localhost:5173"); // Vite usa a porta 5173 por padrão
+
+  // Carrega o frontend Vite (ou ficheiro estático em produção)
+  mainWindow.loadURL("http://localhost:5173");
+
+  // Quando estiver pronto, mostra e fecha o splash
+  mainWindow.webContents.on("did-finish-load", () => {
+    // Garante que a splash fica pelo menos 1 segundo visível
+    setTimeout(() => {
+      splash.destroy();
+      mainWindow.show();
+    }, 1000);
+  });
+
 
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
-});
+}
+
+
+app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
@@ -81,7 +119,7 @@ async function printReceipt(receipt) {
     console.log('Printer connected:', isConnected);
   
     printer.alignCenter();
-    await printer.printImage("logo_.png");
+    await printer.printImage("public/logo_.png");
     printer.newLine();
     printer.newLine();
 
@@ -208,37 +246,69 @@ async function printReceipt(receipt) {
 
 //operações de clientes
 ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
-  const query = "SELECT id, name, number, address FROM clients WHERE name LIKE ?";
-  return db.prepare(query).all(`%${searchTerm}%`);
+  try {
+    const query = "SELECT id, name, number, address FROM clients WHERE name LIKE ?";
+    const result = db.prepare(query).all(`%${searchTerm}%`);
+
+    if (result.length === 0) {
+      return { success: false, message: "Nenhum cliente encontrado." };
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, message: "Erro interno ao procurar clientes." };
+  }
 });
+
+
 
 ipcMain.handle("get-clientes-search-receipt", (event, searchTerm) => {
-  
-  const query = `
-    SELECT 
-      c.id,
-      c.name,
-      c.number,
-      c.address
-    FROM receipts r
-    JOIN clients c ON r.client_id = c.id
-    WHERE r.id = ?;
-  `;
-  
-  return db.prepare(query).all(searchTerm);
+  try {
+    const query = `
+      SELECT 
+        c.id,
+        c.name,
+        c.number,
+        c.address
+      FROM receipts r
+      JOIN clients c ON r.client_id = c.id
+      WHERE r.id = ?;
+    `;
+
+    const result = db.prepare(query).all(searchTerm);
+
+    if (result.length === 0) {
+      return { success: false, message: "Talão não existe." };
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, message: "Erro interno ao procurar cliente pelo talão." };
+  }
 });
+
 
 ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
+  try {
+    const query = `
+      SELECT 
+        id, name, address, number
+      FROM clients
+      WHERE number LIKE ?;
+    `;
 
-  const query = `
-    SELECT 
-      id, name, address, number
-    FROM clients
-    WHERE number LIKE ?;
-  `;
+    const result = db.prepare(query).all(`${searchTerm}%`);
 
-  return db.prepare(query).all(`${searchTerm}%`);
+    if (result.length === 0) {
+      return { success: false, message: "Nenhum cliente encontrado com esse número." };
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, message: "Erro interno ao procurar clientes por número." };
+  }
 });
+
 
 
 //operações de produtos
@@ -331,39 +401,60 @@ ipcMain.handle("get-last-receipt", () => {
 
 //operações de peças
 ipcMain.handle("get-produtos-ref", (event, searchTerm) => {
-  const query = `
-    SELECT 
-      ref,
-      type,
-      color,
-      style,
-      description,
-      price
-    FROM products
-    WHERE ref LIKE ?;
-  `;
+  try {
+    const query = `
+      SELECT 
+        ref,
+        type,
+        color,
+        style,
+        description,
+        price
+      FROM products
+      WHERE ref LIKE ?;
+    `;
 
-  return db.prepare(query).all(`${searchTerm}%`);
+    const result = db.prepare(query).all(`${searchTerm}%`);
+
+    if (result.length === 0) {
+      return { success: false, message: "Nenhuma peça encontrada com essa referência." };
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, message: "Erro interno ao procurar produtos por referência." };
+  }
 });
+
 
 ipcMain.handle("get-produtos-description", (event, searchTerm) => {
-  const searchTermStr = String(searchTerm).toLowerCase(); // pesquisa case-insensitive
-  
-  const query = `
-    SELECT 
-      ref, 
-      type, 
-      color, 
-      style, 
-      description, 
-      price
-    FROM products
-    WHERE LOWER(description) LIKE ?;
-  `;
-  
-  const result = db.prepare(query).all(`%${searchTermStr}%`);
-  return result;
+  try {
+    const searchTermStr = String(searchTerm).toLowerCase(); // pesquisa case-insensitive
+
+    const query = `
+      SELECT 
+        ref, 
+        type, 
+        color, 
+        style, 
+        description, 
+        price
+      FROM products
+      WHERE LOWER(description) LIKE ?;
+    `;
+
+    const result = db.prepare(query).all(`%${searchTermStr}%`);
+
+    if (result.length === 0) {
+      return { success: false, message: "Nenhuma peça encontrado com esse nome." };
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, message: "Erro interno ao procurar produtos por nome." };
+  }
 });
+
 
 ipcMain.handle("remove-ref", async (event, productRef) => {
   try {
@@ -389,7 +480,7 @@ ipcMain.handle("add-ref", (event, product) => {
   }
 
   const floatPrice = Number(product.price);
-  if (isNaN(floatPrice)) {
+  if (isNaN(floatPrice) || floatPrice <= 0) {
     return { success: false, message: "O valor fornecido não é válido." };
   }
 
@@ -421,8 +512,8 @@ ipcMain.handle("edit-ref", (event, product) => {
   }
 
   // Converte o preço para número real
-  const floatPrice = parseFloat(price);
-  if (isNaN(floatPrice)) {
+  const floatPrice = Number(product.price);
+  if (isNaN(floatPrice) || floatPrice <= 0) {
     return { success: false, message: "O preço fornecido não é válido." };
   }
 
@@ -503,6 +594,10 @@ ipcMain.handle("get-receipts-by-client", (event, clientId) => {
 
 ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
   try {
+    if(startDate > endDate) {
+      return { success: false, message: "Intervalo de datas inválido." };
+    }
+
     const formattedStartDate = startDate + " 00:00:00"; // Data de início com hora inicial
     const formattedEndDate = endDate + " 23:59:59";   // Data de fim com hora final
 
@@ -528,7 +623,7 @@ ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
 ipcMain.handle("edit-receipt", (event, updatedFields) => {
 
   // Verifica se todos os campos necessários foram preenchidos
-  if (!updatedFields.total_price || !updatedFields.products_list || !updatedFields.state || !updatedFields.id) {
+  if ((!updatedFields.total_price && updatedFields.total_price !== 0) || !updatedFields.products_list || !updatedFields.state || !updatedFields.id) {
     return { success: false, message: "Por favor, preencha todos os campos." };
   }    
   

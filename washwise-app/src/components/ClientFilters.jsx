@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BiSearchAlt } from "react-icons/bi";
 import { IoIosArrowDropdown } from "react-icons/io";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Função para filtrar os clientes
 const ClientFilters = ({ updateFilteredClients }) => {
@@ -29,30 +31,63 @@ const ClientFilters = ({ updateFilteredClients }) => {
     // Chama a função de busca de acordo com o tipo de pesquisa selecionado
     if (searchType === "name") {
       window.api.getClientesSearchName(debouncedTerm)
-        .then((clientes) => {
+      .then((response) => {
+        if (response.success) {
+          const clientes = response.data;
           clientes.sort((a, b) => a.name.localeCompare(b.name));
           updateFilteredClients(clientes);
-        })
-        .catch((error) => {
-          console.error("Erro ao procurar clientes:", error);
-        });
+        } else {
+          toast.warn(response.message, {
+            position: "top-right",
+            autoClose: 3000,
+            className: "custom-warn-toast",
+            progressClassName: "custom-warn-progress",
+          });
+          updateFilteredClients([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro inesperado ao procurar clientes:", error);
+      });
     } else if (searchType === "receipt") {
-      window.api.getClientesSearchReceipt(debouncedTerm)
-        .then((clientes) => {
-          updateFilteredClients(clientes);
-        })
-        .catch((error) => {
-          console.error("Erro ao procurar cliente pelo talão:", error);
-        });
+    window.api.getClientesSearchReceipt(debouncedTerm)
+      .then((response) => {
+        if (response.success) {
+          updateFilteredClients(response.data);
+        } else {
+          toast.warn(response.message, {
+            position: "top-right",
+            autoClose: 3000,
+            className: "custom-warn-toast",
+            progressClassName: "custom-warn-progress",
+          });
+          updateFilteredClients([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro inesperado ao procurar cliente pelo talão:", error);
+      });
+
     } else if (searchType === "number") {
-      window.api.getClientesSearchNumber(debouncedTerm) // Pesquisa por número de telefone
-        .then((clientes) => {
+    window.api.getClientesSearchNumber(debouncedTerm)
+      .then((response) => {
+        if (response.success) {
+          const clientes = response.data;
           clientes.sort((a, b) => a.name.localeCompare(b.name));
           updateFilteredClients(clientes);
-        })
-        .catch((error) => {
-          console.error("Erro ao procurar clientes pelo número de telefone:", error);
-        });
+        } else {
+          toast.warn(response.message, {
+            position: "top-right",
+            autoClose: 3000,
+            className: "custom-warn-toast",
+            progressClassName: "custom-warn-progress",
+          });
+          updateFilteredClients([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro inesperado ao procurar clientes pelo número de telefone:", error);
+      });
     }
   };
 

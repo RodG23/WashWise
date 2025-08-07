@@ -4,9 +4,6 @@ import { IoIosArrowDropdown } from "react-icons/io";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//todo adicionar verificação de erros em todas (outras abas tambem) as pesquisas para destinguir demora de inexistencia de match quando da erro limpar tabelas em todas as abas pri:2
-//todo verificar todos os inputs pri:2
-
 // Função para filtrar os clientes
 const ReceiptFilters = ({ updateFilteredReceipts }) => {
   const [searchType, setSearchType] = useState("data"); // Tipo de filtro selecionado
@@ -25,9 +22,6 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
   const [receiptsAllStates, setReceiptsAllStates] = useState([]);
   
   const handleStates = (receipts) => {
-    //console.log(searchTypeState);
-    //console.log(receiptsAllStates);
-    //console.log(receipts);
     if (searchTypeState === "Todos") {
       updateFilteredReceipts(receipts);
     } else {
@@ -77,13 +71,17 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
     if (searchType === "id") {
       window.api.getReceiptById(debouncedTerm)
         .then((response) => {
-          console.log(response);
           if(response.success) {
             const receipt = [response.receipt];
             receipt.forEach(setReceiptDate);
             updateFilteredReceipts(receipt);
-            //console.log(receipt);
           } else {
+            toast.warn(response.message, {
+            position: "top-right",
+            autoClose: 3000,
+            className: "custom-warn-toast",
+            progressClassName: "custom-warn-progress",
+            });
             updateFilteredReceipts([]);
           }
         })
@@ -92,17 +90,18 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
         });
     } else if (searchType === "cliente") {
       window.api.getClientesSearchName(debouncedTerm)
-        .then((clients) => {
-          console.log(clients);
-          clients.sort((a, b) => a.name.localeCompare(b.name));
-          setClients(clients);
+        .then((response) => {
+          if(response.success) {
+            const clients = response.data;
+            clients.sort((a, b) => a.name.localeCompare(b.name));
+            setClients(clients);
+          }
         })
         .catch((error) => {
           console.error("Erro ao procurar clientes:", error);
         });
     }
   };
-
 
   // Função para lidar com o intervalo de datas
   const handleDateChange = () => {
@@ -114,8 +113,13 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
             receipts.forEach(setReceiptDate);
             setReceiptsAllStates(receipts);
             handleStates(receipts);
-            //console.log(receipts);
           } else {
+              toast.warn(response.message, {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
             setReceiptsAllStates([]);
             updateFilteredReceipts([]);
           }
@@ -191,13 +195,20 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
 
     window.api.getReceiptsByClient(cli.id)
       .then((response) => {
-        console.log(response);
         if(response.success) {
           const receipts = response.receipts.reverse();
           receipts.forEach(setReceiptDate);
           setReceiptsAllStates(receipts);
           handleStates(receipts);
-          console.log(receipts);
+        } else {
+          toast.warn(response.message, {
+            position: "top-right",
+            autoClose: 3000,
+            className: "custom-warn-toast",
+            progressClassName: "custom-warn-progress",
+          });
+          setReceiptsAllStates([]);
+          updateFilteredReceipts([]);
         }
       })
       .catch((error) => {

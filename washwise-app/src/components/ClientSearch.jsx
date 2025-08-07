@@ -43,14 +43,14 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
   //filtrar pesquisa
   const filterClients = () => {
     window.api.getClientesSearchName(debouncedTerm)
-        .then((clientes) => {
-          //console.log(clientes);
+    .then((response) => {
+        if (response.success) {
+          const clientes = response.data;
           clientes.sort((a, b) => a.name.localeCompare(b.name));
-          setResult(clientes);
-        })
-        .catch((error) => {
-          console.error("Erro ao procurar clientes:", error);
-        });
+          setResult(clientes);}})
+    .catch((error) => {
+      console.error("Erro ao procurar clientes:", error);
+    });
   };
 
   const handleBlur = () => {
