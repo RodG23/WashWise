@@ -10,7 +10,7 @@ import 'react-toastify/dist/ReactToastify.css';
 // Função para filtrar os clientes
 const ReceiptFilters = ({ updateFilteredReceipts }) => {
   const [searchType, setSearchType] = useState("data"); // Tipo de filtro selecionado
-  const [searchTypeState, setSearchTypeState] = useState("todos"); // Tipo de filtro selecionado
+  const [searchTypeState, setSearchTypeState] = useState("Todos"); // Tipo de filtro selecionado
   const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
   const [showOptions, setShowOptions] = useState(false); // Controla se as opções estão visíveis
   const [showOptionsState, setShowOptionsState] = useState(false); // Controla se as opções estão visíveis no filtro de estado
@@ -28,7 +28,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
     //console.log(searchTypeState);
     //console.log(receiptsAllStates);
     //console.log(receipts);
-    if (searchTypeState === "todos") {
+    if (searchTypeState === "Todos") {
       updateFilteredReceipts(receipts);
     } else {
       updateFilteredReceipts(receipts.filter(r => r.state === searchTypeState));
@@ -58,7 +58,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
     updateFilteredReceipts([]);
     setClients([]);
     setInitialDates();
-    setSearchTypeState("todos");
+    setSearchTypeState("Todos");
   };
 
   const handleOptionSelectState = (option) => {
@@ -381,7 +381,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
                 type="text"
                 placeholder={""}
                 className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
-                value={searchTypeState === "todos" ? "Todos" : searchTypeState === "pendente" ? "Pendente" : searchTypeState === "pago" ? "Pago" : "Entregue"}
+                value={searchTypeState === "Todos" ? "Todos" : searchTypeState === "Pendente" ? "Pendente" : searchTypeState === "Pago" ? "Pago" : "Entregue"}
                 readOnly
               />
               <IoIosArrowDropdown className="size-6" />
@@ -390,14 +390,14 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
             {/* Lista de opções */}
             {showOptionsState && (
               <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
-                {["todos", "pendente", "pago", "entregue"].map((option, index) => (
+                {["Todos", "Pendente", "Pago", "Entregue"].map((option, index) => (
                   <li
                     key={index}
                     className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
                       hover:bg-stone-400 hover:rounded-2xl ${searchTypeState === option ? "bg-stone-400 rounded-2xl" : ""}`}
                     onClick={() => handleOptionSelectState(option)}
                   >
-                    <span>{option === "todos" ? "Todos" : option === "pendente" ? "Pendente" : option === "pago" ? "Pago" : "Entregue"}</span>
+                    <span>{option === "Todos" ? "Todos" : option === "Pendente" ? "Pendente" : option === "Pago" ? "Pago" : "Entregue"}</span>
                   </li>
                 ))}
               </ul>

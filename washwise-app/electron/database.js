@@ -9,8 +9,6 @@ const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, "../washwise.db");
 const db = new Database(dbPath);
 
-//todo obrigar o estado do recibo a ser um enum E meter caps pri:1
-
 // Criar tabelas se não existirem
 db.exec(`
   CREATE TABLE IF NOT EXISTS clients (
@@ -33,12 +31,17 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     client_id INTEGER NOT NULL,
     products_list TEXT NOT NULL,
-    state TEXT NOT NULL,
+    state TEXT NOT NULL CHECK (state IN ('Pendente', 'Pago', 'Entregue')),
     total_price REAL NOT NULL,
     date TEXT NOT NULL,
     created_at TEXT NOT NULL,
     FOREIGN KEY (client_id) REFERENCES clients(id)
   );
+
+  CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name);
+  CREATE INDEX IF NOT EXISTS idx_clients_number ON clients(number);
+  CREATE INDEX IF NOT EXISTS idx_receipts_created_at ON receipts(created_at);
+  CREATE INDEX IF NOT EXISTS idx_products_description ON products(description);
 `);
 
 console.log("Base de dados carregada!");

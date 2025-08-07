@@ -209,14 +209,14 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                         {/* Lista de opções */}
                         {showOptionsState && (
                             <ul className="absolute bottom-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
-                            {["pendente", "pago", "entregue"].map((option, index) => (
+                            {["Pendente", "Pago", "Entregue"].map((option, index) => (
                                 <li
                                 key={index}
                                 className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
                                     hover:bg-stone-400 hover:rounded-2xl ${editingState === option ? "bg-stone-400 rounded-2xl" : ""}`}
                                 onClick={() => handleOptionSelectState(option)}
                                 >
-                                <span>{option === "pendente" ? "Pendente" : option === "pago" ? "Pago" : "Entregue"}</span>
+                                <span>{option === "Pendente" ? "Pendente" : option === "Pago" ? "Pago" : "Entregue"}</span>
                                 </li>
                             ))}
                             </ul>
