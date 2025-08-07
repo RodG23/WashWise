@@ -29,7 +29,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
     const handleBlur = () => {
         const floatValue = parseFloat(Number(value));
         if (isNaN(floatValue) || floatValue < 0) {
-            setValue(-1);
+            setValue(selectedReceiptEdit.total_price);
             toast.warn("Valor inválido.", {
                     position: "top-right",
                     autoClose: 3000,

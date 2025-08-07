@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BiSearchAlt } from "react-icons/bi";
 import { IoIosArrowDropdown } from "react-icons/io";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+//ref so pode ser numero
+//verificar valor
 
 // Função para filtrar os clientes
 const RefFilters = ({ updateFilteredRefs }) => {
@@ -26,28 +31,47 @@ const RefFilters = ({ updateFilteredRefs }) => {
 
   // Função para realizar a pesquisa
   const handleSearch = () => {
-    // Chama a função de busca de acordo com o tipo de pesquisa selecionado
     if (searchType === "id") {
       window.api.getProdutosRef(debouncedTerm)
-        .then((pecas) => {
-          pecas.sort((a, b) => a.ref.localeCompare(b.ref));
-          updateFilteredRefs(pecas);
-          //console.log(pecas);
+        .then((response) => {
+          if (response.success) {
+            const pecas = response.data;
+            pecas.sort((a, b) => a.ref.localeCompare(b.ref));
+            updateFilteredRefs(pecas);
+          } else {
+            toast.warn(response.message, {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
+            updateFilteredRefs([]);
+          }
         })
         .catch((error) => {
-          console.error("Erro ao procurar peças pelo id: ", error);
+          console.error("Erro ao procurar peças pelo id:", error);
         });
     } else if (searchType === "nome") {
       window.api.getProdutosDescription(debouncedTerm)
-        .then((pecas) => {
-          updateFilteredRefs(pecas);
-          //console.log(pecas);
+        .then((response) => {
+          if (response.success) {
+            updateFilteredRefs(response.data);
+          } else {
+            toast.warn(response.message, {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
+            updateFilteredRefs([]);
+          }
         })
         .catch((error) => {
-          console.error("Erro ao procurar peças pelo nome: ", error);
+          console.error("Erro ao procurar peças pelo nome:", error);
         });
     }
   };
+
 
 
   // Usar o useEffect para debouncing

@@ -23,11 +23,15 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
       return;
     }
 
-    window.api.getProdutosRef(value).then((refs) => {
-      console.log(refs);
-      setResult(refs);
-    });
+    window.api.getProdutosRef(value)
+    .then((response) => {
+      if (response.success) {
+        const pecas = response.data;
+        setResult(pecas);
+      }});
   };
+
+
 
   //lida com mudança de input
   const handleChange = (value) => {
