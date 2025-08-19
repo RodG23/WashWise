@@ -271,10 +271,10 @@ function App() {
               <div className="row-start-1 col-span-6 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
                 <ReceiptFilters updateFilteredReceipts={updateFilteredReceipts}/>
               </div>
-              <div className="col-span-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center pl-[10%]">
+              <div className="col-span-4 row-span-4 row-start-2 col-start-1 bg-[#E1E4F1] flex items-center justify-center">
                 <ReceiptTable filteredReceipts={filteredReceipts} updateFilteredReceipts={updateFilteredReceipts} selectedReceiptId={selectedReceiptEdit?.id} onReceiptSelect={handleReceiptSelectForEdit}/>
               </div>
-              <div className="col-span-3 col-start-4 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center pl-[10%] pr-[10%]">
+              <div className="col-span-2 col-start-5 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
                 <ReceiptPreview selectedReceiptEdit={selectedReceiptEdit} isEditing={selectedReceiptEdit !== null} handleNewReceipt={handleNewReceipt} updateFilteredReceipts={updateFilteredReceipts} activeTab={activeTab}/>
               </div>
           </div>
@@ -282,13 +282,13 @@ function App() {
           {activeTab === "peças" && 
           <>
             <div className="h-full grid grid-cols-3 grid-rows-5">
-            <div className="row-start-1 col-span-3 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
+            <div className="row-start-1 col-span-2 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
               <RefFilters updateFilteredRefs={updateFilteredRefs}/>
             </div>
             <div className="col-span-2 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
               <RefTable filteredRefs={filteredRefs} updateFilteredRefs={updateFilteredRefs} selectedRefId={selectedRefEdit?.ref} onRefSelect={handleRefSelectForEdit}/>
             </div>
-            <div className="col-start-3 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center overflow-clip">
+            <div className="col-start-3 row-span-5 bg-[#E1E4F1] flex items-center justify-center overflow-clip">
               <RefForm selectedRefEdit={selectedRefEdit} isEditing={selectedRefEdit !== null} handleNewRef={handleNewRef} updateFilteredRefs={updateFilteredRefs} activeTab={activeTab}/>
             </div>
             </div>

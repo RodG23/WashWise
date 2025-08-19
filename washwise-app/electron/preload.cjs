@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld("api", {
     addCliente: (cliente) => ipcRenderer.invoke("add-cliente", cliente),
     saveReceipt: (receipt) => ipcRenderer.invoke("save-receipt", receipt),
+    printReceipt: (receipt) => ipcRenderer.invoke("print-receipt", receipt),
     saveAndPrintReceipt: (receipt) => ipcRenderer.invoke("save-print-receipt", receipt),
     getClientesSearchName: (searchTerm) => ipcRenderer.invoke("get-clientes-search-name", searchTerm),
     getClientesSearchReceipt: (searchTerm) => ipcRenderer.invoke("get-clientes-search-receipt", searchTerm),
