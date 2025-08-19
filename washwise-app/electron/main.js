@@ -75,7 +75,7 @@ function createWindow() {
     mainWindow.loadFile(path.join(app.getAppPath(), '../renderer', 'index.html'));
   }
 
-  mainWindow.webContents.openDevTools();
+  //mainWindow.webContents.openDevTools();
 
   // Quando estiver pronto, mostra e fecha o splash
   mainWindow.webContents.on("did-finish-load", () => {
@@ -157,7 +157,7 @@ async function printReceipt(receipt) {
     console.log('Printer connected:', isConnected);
   
     printer.alignCenter();
-    await printer.printImage(path.join(app.getAppPath(), '../renderer', 'logo_.png'));
+    //await printer.printImage(path.join(app.getAppPath(), '../renderer', 'logo_.png'));
     printer.newLine();
     printer.newLine();
 
@@ -170,7 +170,7 @@ async function printReceipt(receipt) {
     printer.println("Av. 25 de Abril, 241");
 
     // ID na segunda linha, alinhado à direita
-    printer.leftRight("4830-512 Póvoa de Lanhoso", new Date().toLocaleDateString('pt-PT'));
+    printer.leftRight("4830-512 Póvoa de Lanhoso", receipt.table_date);
 
     // Data na linha do telefone, alinhado à direita
     printer.println("Tlf: 253 634 051");
@@ -276,7 +276,7 @@ async function printReceipt(receipt) {
 
   return { success: true };
   } catch (error) {
-    console.error("Erro ao guardar e imprimir o talão:", error);
+    console.error("Erro ao imprimir o talão:", error);
     return { success: false, error: error.message };
   }
 }
@@ -356,15 +356,16 @@ ipcMain.handle("save-receipt", async (event, receipt) => {
 
 ipcMain.handle("save-print-receipt", async (event, receipt) => {
   const saveResult = await saveReceipt(receipt);
+  const table_date = new Date().toLocaleDateString('pt-PT');
   if (!saveResult.success) return saveResult;
-  return printReceipt({...receipt, receipt_id: saveResult.receipt_id});
+  return printReceipt({...receipt, receipt_id: saveResult.receipt_id, table_date: table_date});
 });
 
 ipcMain.handle("print-receipt", async (event, receipt) => {
-  return printReceipt({...receipt, receipt_id: receipt.id});
+  return printReceipt({...receipt, receipt_id: receipt.id, client_name: receipt.name, products: JSON.parse(receipt.products_list)});
 });
   
-ipcMain.handle("add-cliente", (event, cliente) => {
+ipcMain.handle("add-cliente", async (event, cliente) => {
   if (!cliente.name || !cliente.number || !cliente.address) {
     return { success: false, message: "Por favor, preencha todos os campos." };
   }

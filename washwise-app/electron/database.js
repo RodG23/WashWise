@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 // Caminho para a base de dados no diretório do Electron
 const userDataPath = app.getPath("userData");
 const dbPath = path.join(userDataPath, "washwise.db");
+//console.log(dbPath);
 const db = new Database(dbPath);
 
 // Criar tabelas se não existirem

@@ -63,27 +63,22 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
     }
   };
 
-    const handlePrintClick = (receipt) => {
+    const handlePrintClick = async (receipt) => {
     if (receiptToPrint && receiptToPrint.id === receipt.id && isPrintConfirmed) {
       // Se o talão já estiver confirmado para impressão, realiza a impressão
-      window.api.printReceipt(receipt)  // Chama a função de impressão de talão no backend (main process)
-        .then(response => {
-          if (response.success) {
-            toast.success(response.message,{
-                    toastId: "print-receipt-again-success",
-                  });
-          } else {
-            toast.warn(response.message, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    className: "custom-warn-toast",
-                    progressClassName: "custom-warn-progress",
-                  });
-          }
-        })
-        .catch(error => {
-          console.error("Erro ao imprimir talão:", error);
-      });      
+      const response = await window.api.printReceipt(receipt)  // Chama a função de impressão de talão no backend (main process)
+      if (response.success) {
+        toast.success("Talão impresso com sucesso.",{
+                toastId: "print-receipt-again-success",
+              });
+      } else {
+        toast.warn(response.message, {
+                position: "top-right",
+                autoClose: 3000,
+                className: "custom-warn-toast",
+                progressClassName: "custom-warn-progress",
+              });
+      }    
       setIsPrintConfirmed(false); // Reseta o estado após a impressão
       setReceiptToPrint(null); // Reseta o talão a ser impresso
     } else {
