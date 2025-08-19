@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { IoIosArrowDropup } from "react-icons/io";
+import { HiOutlineIdentification } from "react-icons/hi";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -112,6 +113,22 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
         handleNewReceipt();
     };
 
+    const handlePrint = async () => {
+        const response = await window.api.printNumber(selectedReceiptEdit.id, selectedReceiptEdit.name);
+        if (response.success) {
+            toast.success("Impresso com sucesso!", {
+            });
+        } else {
+            toast.warn("Erro ao imprimir.", {
+                position: "top-right",
+                autoClose: 3000,
+                className: "custom-warn-toast",
+                progressClassName: "custom-warn-progress",
+                toastId: "erro-impressão",
+            });
+        }
+    }
+
     //Caso leading nao funcione usar o none
     return (
         <div className="grid grid-cols-2 grid-rows-11 bg-white h-[90%] w-[85%] rounded-2xl ">
@@ -160,7 +177,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                         Peça
                     </th>
                     <th className="w-1/4 p-2 font-normal text-xl text-center border-2 border-l-0 border-b-4 border-t-0 border-[#B8B8B8]">
-                        Ensacado
+                            Ensacado
                     </th>
                     </tr>
                 </thead>
@@ -190,7 +207,10 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
             </div>
             </div>
             <div className="flex justify-center items-center gap-1 text-xl row-start-10 font-bold h-full">
-                <p>Estado:</p>
+            <HiOutlineIdentification
+                className={`size-10 opacity-70 ${isEditing ? 'cursor-pointer hover:opacity-100' : 'opacity-50 pointer-events-none'}`}
+                onClick={isEditing ? handlePrint : undefined}
+            />
             </div>
             <div className="gap-1 flex justify-center items-center text-xl row-start-10 col-start-2">
                 <p className="font-bold">Levantamento:</p>  

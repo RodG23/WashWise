@@ -6,9 +6,6 @@ import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-ther
 import { screen } from "electron";
 import fs from 'fs';
 
-//todo botao pri:3
-//todo escolher impressora pri:4
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = !app.isPackaged;
@@ -157,15 +154,27 @@ async function printReceipt(receipt) {
     console.log('Printer connected:', isConnected);
   
     printer.alignCenter();
-    //await printer.printImage(path.join(app.getAppPath(), '../renderer', 'logo_.png'));
+    await printer.printImage(path.join(app.getAppPath(), '../renderer', 'logo_.png'));
     printer.newLine();
     printer.newLine();
 
     // Cabeçalho - Logo e informações
     printer.alignLeft();
-    printer.bold(true);
-    printer.leftRight("Lavandaria 3 Marias", `Nº: ${receipt.receipt_id}`);
-    printer.bold(false);
+    //printer.bold(true);
+    printer.setTypeFontB();
+    printer.setTextSize(1,1);
+
+    const textLeft = "Lavandaria 3 Marias";
+    const textRight = `Nº: ${receipt.receipt_id}`;    
+    const spacesCount = 32 - textLeft.length - textRight.length;
+    const spaces = spacesCount > 0 ? ' '.repeat(spacesCount) : '';
+    
+    // Linha final
+    const line = textLeft + spaces + textRight;
+    printer.println(line);
+    printer.setTypeFontA();
+    printer.setTextNormal();
+    //printer.bold(false);
     // Mantém negrito para morada e telefone
     printer.println("Av. 25 de Abril, 241");
 
@@ -281,6 +290,46 @@ async function printReceipt(receipt) {
   }
 }
 
+async function printNumber(id, name) {
+  try {
+    const printer = new ThermalPrinter({
+      type: PrinterTypes.EPSON, // 'star' or 'epson'
+      interface: String.raw`\\.\COM3`,
+      options: {
+        timeout: 1000,
+      },
+      width: 48, // Number of characters in one line - default: 48
+      characterSet: CharacterSet.SLOVENIA, // Character set - default: SLOVENIA
+      breakLine: BreakLine.WORD, // Break line after WORD or CHARACTERS. Disabled with NONE - default: WORD
+      removeSpecialCharacters: false, // Removes special characters - default: false
+      lineCharacter: '-', // Use custom character for drawing lines - default: -
+    });
+  
+    const isConnected = await printer.isPrinterConnected();
+    console.log('Printer connected:', isConnected);
+  
+    printer.alignCenter();
+    printer.setTextSize(7,7);
+    printer.println(id);
+    printer.newLine();
+    printer.setTextSize(1,1);
+    printer.println(name);
+    printer.cut();
+
+    try {
+      await printer.execute();
+      console.log('Print success.');
+    } catch (error) {
+      console.error('Print error:', error);
+    }
+
+  return { success: true };
+  } catch (error) {
+    console.error("Erro ao imprimir o talão:", error);
+    return { success: false, error: error.message };
+  }
+} 
+
 
 //operações de clientes
 ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
@@ -363,6 +412,10 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
 
 ipcMain.handle("print-receipt", async (event, receipt) => {
   return printReceipt({...receipt, receipt_id: receipt.id, client_name: receipt.name, products: JSON.parse(receipt.products_list)});
+});
+
+ipcMain.handle("print-number", async (event, id, name) => {
+  return printNumber(id, name);
 });
   
 ipcMain.handle("add-cliente", async (event, cliente) => {
