@@ -6,7 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, updateFilteredReceipts, activeTab }) => {
 
     const [value, setValue] = useState(0); //Guarda valor da edição
-    const numberOfLinesToRender = 5;
+    const numberOfLinesToRender = 4;
     const [showOptionsState, setShowOptionsState] = useState(false); // Controla se as opções estão visíveis na mudança de estado
     const [editingState, setEditingState] = useState(""); //Guarda estado do talao a ser editado
     const [productsState, setProductsState] = useState([]);
@@ -112,12 +112,13 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
         handleNewReceipt();
     };
 
+    //Caso leading nao funcione usar o none
     return (
-        <div className="grid grid-cols-2 grid-rows-11 bg-white h-[90%] w-[70%] rounded-2xl ">
+        <div className="grid grid-cols-2 grid-rows-11 bg-white h-[90%] w-[85%] rounded-2xl ">
             <div className= "col-span-2 row-span-2 flex justify-center items-center">
                   <img src="../renderer/logo.png" alt="Logo" className="w-[80%] h-[80%] object-contain" />
             </div>
-            <div className="col-span-2 row-span-2 grid grid-cols-2 grid-rows-3">
+            <div className="col-span-2 row-span-2 grid grid-cols-2 grid-rows-3 leading-tight"> 
                 <div className= "pl-4 row-span-2 flex-col">
                     <p className="font-bold text-lg">Lavandaria 3 Marias</p>
                     <p className="">Av. 25 de Abril, 241</p>
@@ -128,7 +129,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                     <p className="font-bold">Nº:</p>
                     {selectedReceiptEdit?.id || "[.....]"}
                 </div>
-                <div className= "col-start-2 flex flex-col items-end pr-4">
+                <div className= "col-start-2 flex flex-col items-end pr-4 leading-tight">
                     <div>{selectedReceiptEdit?.table_date || "dd-mm-aaaa"}</div> 
                     <div>{selectedReceiptEdit?.table_hour || "hh:mm:ss"}</div>
                 </div>
@@ -188,48 +189,45 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                 </table>
             </div>
             </div>
-            <div className="justify-center items-center gap-1 text-xl row-start-10 row-span-2 grid grid-rows-2">
-                <div className="gap-1 flex justify-center items-center text-xl pr-4 font-bold h-full ">
-                        <p>Estado:</p>
-                </div>
-                <div className="flex-col flex w-full h-[100%]">
-                    <div className='flex justify-center items-center flex-col'>
-                        <div className="row-start-1 relative w-[70%] cursor-pointer shadow-md rounded-2xl border-2 border-[#928787] bg-[#C1C0C0]">
-                        <div className="rounded-2xl p-3 flex items-center " onClick={toggleOptionsState}>
-                            <input
-                            type="text"
-                            placeholder={""}
-                            className="bg-transparent border-none outline-none text-2xl ml-1 cursor-pointer flex items-center w-full h-full justify-center overflow-clip border-2"
-                            value={editingState || ""}
-                            readOnly
-                            />
-                            <IoIosArrowDropup className="size-6" />
-                        </div>
-            
-                        {/* Lista de opções */}
-                        {showOptionsState && (
-                            <ul className="absolute bottom-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
-                            {["Pendente", "Pago", "Entregue"].map((option, index) => (
-                                <li
-                                key={index}
-                                className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
-                                    hover:bg-stone-400 hover:rounded-2xl ${editingState === option ? "bg-stone-400 rounded-2xl" : ""}`}
-                                onClick={() => handleOptionSelectState(option)}
-                                >
-                                <span>{option === "Pendente" ? "Pendente" : option === "Pago" ? "Pago" : "Entregue"}</span>
-                                </li>
-                            ))}
-                            </ul>
-                        )}
-                        </div>
-                    </div>
-                </div>
+            <div className="flex justify-center items-center gap-1 text-xl row-start-10 font-bold h-full">
+                <p>Estado:</p>
             </div>
-            <div className="gap-1 flex justify-center items-center text-xl pl-4">
+            <div className="gap-1 flex justify-center items-center text-xl row-start-10 col-start-2">
                 <p className="font-bold">Levantamento:</p>  
                 {selectedReceiptEdit?.date || ""}
             </div>
-            <div className="flex justify-center items-start col-start-2">
+            <div className="row-start-11 flex justify-center items-start">
+                <div className=" w-[70%] h-[80%] relative cursor-pointer shadow-md rounded-2xl border-2 border-[#928787] bg-[#C1C0C0]">
+                <div className="h-full rounded-2xl p-3 flex items-center cursor-pointer justify-between"
+                    onClick={toggleOptionsState}
+                    >
+                    <button
+                        type="button"
+                        className="bg-transparent border-none outline-none text-2xl ml-1 w-full h-full text-left flex items-center justify-between cursor-pointer"
+                    >
+                        {editingState || " "}
+                    </button>
+                    <IoIosArrowDropup className="size-6" />
+                    </div>
+    
+                {/* Lista de opções */}
+                {showOptionsState && (
+                    <ul className="absolute bottom-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
+                    {["Pendente", "Pago", "Entregue"].map((option, index) => (
+                        <li
+                        key={index}
+                        className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
+                            hover:bg-stone-400 hover:rounded-2xl ${editingState === option ? "bg-stone-400 rounded-2xl" : ""}`}
+                        onClick={() => handleOptionSelectState(option)}
+                        >
+                        <span>{option === "Pendente" ? "Pendente" : option === "Pago" ? "Pago" : "Entregue"}</span>
+                        </li>
+                    ))}
+                    </ul>
+                )}
+                </div>
+            </div>
+            <div className="flex justify-center items-start col-start-2 row-start-11">
                 <button
                     onClick={handleSave}
                     className="flex items-center w-[70%] h-[80%] bg-[#C1C0C0] rounded-2xl text-2xl shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95">

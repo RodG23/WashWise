@@ -12,6 +12,7 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = !app.isPackaged;
+let mainWindow;
 
 function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -32,7 +33,12 @@ function createWindow() {
   });
 
   // Caminho absoluto da imagem
-  const logoBase64 = fs.readFileSync(path.join(app.getAppPath(), '../renderer', 'ww_logo_s.png')).toString('base64')
+  let logoBase64;
+  if (!isDev) {
+    logoBase64 = fs.readFileSync(path.join(app.getAppPath(), '../renderer', 'ww_logo_s.png')).toString('base64');
+  } else {
+    logoBase64 = ""; 
+  }
 
 
   // HTML inline do splash
@@ -44,7 +50,7 @@ function createWindow() {
 
   splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHTML))
 
-  let mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width,
     height,
     x: 0,
@@ -69,7 +75,7 @@ function createWindow() {
     mainWindow.loadFile(path.join(app.getAppPath(), '../renderer', 'index.html'));
   }
 
-  //mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // Quando estiver pronto, mostra e fecha o splash
   mainWindow.webContents.on("did-finish-load", () => {
@@ -86,11 +92,25 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+const gotLock = app.requestSingleInstanceLock();
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
+if (!gotLock) {
+  // Segunda instância: fecha-se logo
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(createWindow);
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
+  });
+}
 
 async function saveReceipt(receipt) {
   try {
@@ -137,7 +157,7 @@ async function printReceipt(receipt) {
     console.log('Printer connected:', isConnected);
   
     printer.alignCenter();
-    await printer.printImage(path.join(app.getAppPath(), '../renderer', 'ww_logo_t.png'));
+    await printer.printImage(path.join(app.getAppPath(), '../renderer', 'logo_.png'));
     printer.newLine();
     printer.newLine();
 
@@ -338,6 +358,10 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
   const saveResult = await saveReceipt(receipt);
   if (!saveResult.success) return saveResult;
   return printReceipt({...receipt, receipt_id: saveResult.receipt_id});
+});
+
+ipcMain.handle("print-receipt", async (event, receipt) => {
+  return printReceipt({...receipt, receipt_id: receipt.id});
 });
   
 ipcMain.handle("add-cliente", (event, cliente) => {

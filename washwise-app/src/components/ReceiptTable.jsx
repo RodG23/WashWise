@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MdReadMore } from "react-icons/md";
 import { AiTwotoneDelete } from "react-icons/ai";
+import { TiPrinter } from "react-icons/ti";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -15,7 +16,10 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
 
   const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false); // Controla se a exclusão foi confirmada
   const [receiptToDelete, setReceiptToDelete] = useState(null); // Armazena o talão que está marcado para exclusão
+  const [isPrintConfirmed, setIsPrintConfirmed] = useState(false); // Controla se a impressão foi confirmada
+  const [receiptToPrint, setReceiptToPrint] = useState(null); // Armazena o talão que está marcado para impressão
   const [timeoutID, setTimeoutID] = useState(null); // Armazena o ID do timeout para a exclusão
+  const [timeoutPrint, setTimeoutPrint] = useState(null); // Armazena o ID do timeout para a impressão
 
   const handleDeleteClick = (receipt) => {
     if (receiptToDelete && receiptToDelete.id === receipt.id && isDeleteConfirmed) {
@@ -59,8 +63,49 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
     }
   };
 
+    const handlePrintClick = (receipt) => {
+    if (receiptToPrint && receiptToPrint.id === receipt.id && isPrintConfirmed) {
+      // Se o talão já estiver confirmado para impressão, realiza a impressão
+      window.api.printReceipt(receipt)  // Chama a função de impressão de talão no backend (main process)
+        .then(response => {
+          if (response.success) {
+            toast.success(response.message,{
+                    toastId: "print-receipt-again-success",
+                  });
+          } else {
+            toast.warn(response.message, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "custom-warn-toast",
+                    progressClassName: "custom-warn-progress",
+                  });
+          }
+        })
+        .catch(error => {
+          console.error("Erro ao imprimir talão:", error);
+      });      
+      setIsPrintConfirmed(false); // Reseta o estado após a impressão
+      setReceiptToPrint(null); // Reseta o talão a ser impresso
+    } else {
+      // Primeiro clique para confirmar
+      setIsPrintConfirmed(true);
+      setReceiptToPrint(receipt);
+
+      // Se já havia um timeout limpa
+      if (timeoutPrint) clearTimeout(timeoutPrint);
+
+      // Cria um novo timeout de 3s
+      const id = setTimeout(() => {
+        setIsPrintConfirmed(false);
+        setReceiptToPrint(null);
+      }, 3000);
+
+      setTimeoutPrint(id); // Armazena o ID do timeout
+    }
+  };
+
   return (
-    <div className="overflow-auto rounded-2xl h-[90%] w-full flex text-3xl scrollbar-hidden">
+    <div className="overflow-auto rounded-2xl h-[90%] w-[85%] flex text-3xl scrollbar-hidden">
       <table className="w-full h-full">
         <thead>
           <tr className="bg-[#D9D9D9] sticky top-0 z-10">
@@ -79,9 +124,11 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
             <th className="w-4/24 p-2 font-normal text-center border-r-0 border-b-4 border-[#B8B8B8]">
               Data
             </th>
-            <th className="w-3/24 p-2 text-center border-b-4 border-[#B8B8B8]">
+            <th className="w-2/24 p-2 text-center border-b-4 border-[#B8B8B8]">
             </th>
-            <th className="w-3/24 p-2 text-center border-b-4 border-[#B8B8B8]">
+            <th className="w-2/24 p-2 text-center border-b-4 border-[#B8B8B8]">
+            </th>
+            <th className="w-2/24 p-2 text-center border-b-4 border-[#B8B8B8]">
             </th>
           </tr>
         </thead>
@@ -104,7 +151,18 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
                 {receipt?.table_date || ""}
               </td>
               <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
-                <div className="flex justify-end">
+                <div className="flex justify-center">
+                  {receipt && (
+                    <TiPrinter
+                      className={`size-10 opacity-55 cursor-pointer hover:opacity-100
+                        ${receiptToPrint && receiptToPrint.id === receipt.id && isPrintConfirmed ? "text-green-800 opacity-100" : "text-black"}`}
+                      onClick={() => handlePrintClick(receipt)}
+                    />
+                  )}
+                </div>
+              </td>
+              <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
+                <div className="flex justify-center">
                   {receipt && (
                     <MdReadMore
                       className={`size-10 opacity-55 cursor-pointer hover:opacity-100 ${selectedReceiptId === receipt.id ? "text-blue-900 opacity-100" : "text-black"}`}

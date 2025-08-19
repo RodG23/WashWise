@@ -93,7 +93,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
   }, [debouncedTerm]);
 
   return (
-    <div className='h-full w-full grid grid-cols-3'>
+    <div className='h-full w-full grid grid-cols-2'>
       {/* Lista de seleção do tipo de pesquisa */}
       <div className='row-start-1 bg-[#E1E4F1] flex justify-center items-center flex-col w-full'>
         <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
