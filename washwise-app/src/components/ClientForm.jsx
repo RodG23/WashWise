@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -9,6 +9,11 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
   const [number, setNumber] = useState(selectedClientEdit?.number || "");
   const [address, setAddress] = useState(selectedClientEdit?.address || "");
   const [isNewClientActive, setIsNewClientActive] = useState(true); // Para controlar o estado dos botões
+
+  // refs para inputs
+  const nameRef = useRef(null);
+  const numberRef = useRef(null);
+  const addressRef = useRef(null);
 
   useEffect(() => {
     if (activeTab !== "Clientes") {
@@ -96,6 +101,19 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
     setIsNewClientActive(true); // Ativar "Novo Cliente"
   };
 
+  const handleEnter = (e, nextRef) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (nextRef?.current) {
+        nextRef.current.focus();
+      } else {
+        // se não houver próximo → submete
+        handleSave();
+        addressRef.current?.blur();
+      }
+    }
+  };
+
   return (
     <div className="w-[90%] rounded-2xl flex flex-col justify-center overflow-clip">
       <div className="grid grid-cols-2 text-center font-normal text-3xl rounded-t-2xl w-full">
@@ -125,9 +143,11 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
+            ref={nameRef}
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => handleEnter(e, numberRef)}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             placeholder="Nome do cliente"
           />
@@ -138,9 +158,11 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
+            ref={numberRef}
             type="text"
             value={number}
             onChange={(e) => setNumber(e.target.value)}
+            onKeyDown={(e) => handleEnter(e, addressRef)}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             placeholder="Número de telefone"
           />
@@ -151,9 +173,11 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
+            ref={addressRef}
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
+            onKeyDown={(e) => handleEnter(e, null)} // último input → submit
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             placeholder="Endereço"
           />

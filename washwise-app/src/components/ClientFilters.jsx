@@ -117,7 +117,14 @@ const ClientFilters = ({ updateFilteredClients }) => {
         <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
           <p>Filtrar por:</p>
         </div>
-        <div className="row-start-1 relative w-[70%] cursor-pointer">
+        <div className="row-start-1 relative w-[70%] cursor-pointer"
+          tabIndex={0}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setShowOptions(false);
+            }
+          }}
+        >
           <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptions}>
             <input
               type="text"
@@ -135,6 +142,7 @@ const ClientFilters = ({ updateFilteredClients }) => {
               {["name", "receipt", "number"].map((option, index) => (
                 <li
                   key={index}
+                  tabIndex={0}
                   className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
                     hover:bg-stone-400 hover:rounded-2xl ${searchType === option ? "bg-stone-400 rounded-2xl" : ""}`}
                   onClick={() => handleOptionSelect(option)}

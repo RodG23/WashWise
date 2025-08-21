@@ -24,10 +24,37 @@ const RefFilters = ({ updateFilteredRefs }) => {
   const handleOptionSelect = (option) => {
     setSearchType(option);
     setShowOptions(false);
-    inputRef.current?.focus(); // Passar o foco para o campo de pesquisa após selecionar
     setSearchTerm("");
-    updateFilteredRefs([]);
+    inputRef.current?.focus(); // Passar o foco para o campo de pesquisa após selecionar
+    if (option === "all") {
+      updateFilteredRefs([]);
+      handleSearchAll();
+    } else {
+      updateFilteredRefs([]);
+    }
   };
+
+  const handleSearchAll = () => {
+    window.api.getRefs()
+        .then((response) => {
+          if (response.success) {
+            const pecas = response.data;
+            pecas.sort((a, b) => a.ref.localeCompare(b.ref));
+            updateFilteredRefs(pecas);
+          } else {
+            toast.warn(response.message, {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
+            updateFilteredRefs([]);
+          }
+        })
+        .catch((error) => {
+          console.error("Erro ao procurar peças pelo id:", error);
+        });
+  }
 
   // Função para realizar a pesquisa
   const handleSearch = () => {
@@ -69,10 +96,8 @@ const RefFilters = ({ updateFilteredRefs }) => {
         .catch((error) => {
           console.error("Erro ao procurar peças pelo nome:", error);
         });
-    }
+      }
   };
-
-
 
   // Usar o useEffect para debouncing
   useEffect(() => {
@@ -99,13 +124,20 @@ const RefFilters = ({ updateFilteredRefs }) => {
         <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
           <p>Filtrar por:</p>
         </div>
-        <div className="row-start-1 relative w-[70%] cursor-pointer">
+        <div className="row-start-1 relative w-[70%] cursor-pointer"
+          tabIndex={0}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setShowOptions(false);
+            }
+          }}
+        >
           <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptions}>
             <input
               type="text"
               placeholder={""}
               className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
-              value={searchType === "id" ? "Referência de peça" : "Nome de Peça"}
+              value={searchType === "id" ? "Referência de peça" : searchType === "nome" ? "Nome de Peça" : "Todas as Peças"}
               readOnly
             />
             <IoIosArrowDropdown className="size-6" />
@@ -114,14 +146,15 @@ const RefFilters = ({ updateFilteredRefs }) => {
           {/* Lista de opções */}
           {showOptions && (
             <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
-              {["id", "nome"].map((option, index) => (
+              {["id", "nome", "all"].map((option, index) => (
                 <li
                   key={index}
+                  tabIndex={0}
                   className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
                     hover:bg-stone-400 hover:rounded-2xl ${searchType === option ? "bg-stone-400 rounded-2xl" : ""}`}
                   onClick={() => handleOptionSelect(option)}
                 >
-                  <span>{option === "id" ? "Referência de Peça" : "Nome de Peça"}</span>
+                  <span>{option === "id" ? "Referência de Peça" : option === "nome"? "Nome de Peça" : "Todas as Peças"}</span>
                 </li>
               ))}
             </ul>
@@ -130,7 +163,8 @@ const RefFilters = ({ updateFilteredRefs }) => {
       </div>
 
       {/* Campo de Pesquisa */}
-      <div className="h-full ml-1 flex-col flex justify-center">
+      {(searchType === "id" || searchType === "nome") && (
+        <div className="h-full ml-1 flex-col flex justify-center">
         <div className="flex w-[70%] text-3xl overflow-clip mt-3 mb-1">
           <p>{`${searchType === "id" ? "Referência de Peça:" : "Nome de Peça:"}`}</p>
         </div>
@@ -149,6 +183,7 @@ const RefFilters = ({ updateFilteredRefs }) => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

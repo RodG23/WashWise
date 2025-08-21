@@ -131,7 +131,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
 
     //Caso leading nao funcione usar o none
     return (
-        <div className="grid grid-cols-2 grid-rows-11 bg-white h-[90%] w-[85%] rounded-2xl ">
+        <div className="grid grid-cols-2 grid-rows-11 bg-white h-[90%] w-[95%] rounded-2xl ">
             <div className= "col-span-2 row-span-2 flex justify-center items-center">
                   <img src="../renderer/logo.png" alt="Logo" className="w-[80%] h-[80%] object-contain" />
             </div>
@@ -150,19 +150,25 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                     <div>{selectedReceiptEdit?.table_date || "dd-mm-aaaa"}</div> 
                     <div>{selectedReceiptEdit?.table_hour || "hh:mm:ss"}</div>
                 </div>
-                <div className= "flex justify-start items-center pl-4 text-xl gap-1">
-                    <p className="font-bold">Cliente: </p>
-                    {selectedReceiptEdit?.name || ""}
-                </div>
-                <div className= "gap-1 justify-end items-center pr-4 grid grid-cols-4">
-                    <p className="font-bold text-xl col-start-3">Valor:</p>
+                {/* Cliente e Valor na mesma linha */}
+                <div className="col-span-2 flex justify-between items-center pl-4 pr-4 text-xl gap-2">
+                    {/* Cliente */}
+                    <div className="flex-1 flex items-center gap-1 overflow-hidden">
+                    <p className="font-bold">Cliente:</p>
+                    <p className="truncate">{selectedReceiptEdit?.name || ""}</p>
+                    </div>
+
+                    {/* Valor */}
+                    <div className="flex items-center gap-1">
+                    <p className="font-bold text-xl">Valor:</p>
                     <input
                         type="text"
-                        className="bg-transparent border-none outline-1 outline-[#B8B8B8] text-xl w-auto p-0 text-right"
+                        className="bg-transparent border-none outline-1 outline-[#B8B8B8] text-xl w-[70px] text-right p-0"
                         value={value}
                         onChange={(e) => handleChange(e.target.value)}
                         onBlur={handleBlur}
                     />
+                    </div>
                 </div>
             </div>
             <div className="col-span-2 row-span-5 flex justify-center items-center h-full w-full pl-4 pr-4">
@@ -177,7 +183,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                         Peça
                     </th>
                     <th className="w-1/4 p-2 font-normal text-xl text-center border-2 border-l-0 border-b-4 border-t-0 border-[#B8B8B8]">
-                            Ensacado
+                        Ensacado
                     </th>
                     </tr>
                 </thead>
