@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -11,6 +11,12 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
   const [style, setStyle] = useState(selectedRefEdit?.style || "");
   const [price, setPrice] = useState(selectedRefEdit?.price || "");
   const [isNewRefActive, setIsNewRefActive] = useState(true); // Para controlar o estado dos botões
+
+  const prodRefRef = useRef(null);
+  const typeRef = useRef(null);
+  const colorRef = useRef(null);
+  const styleRef = useRef(null);
+  const priceRef = useRef(null);
 
   useEffect(() => {
     if (activeTab !== "Peças") {
@@ -123,6 +129,18 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
     setIsNewRefActive(true); // Ativar "Nova Peça"
   };
 
+  const handleEnter = (e, nextRef) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (nextRef?.current) {
+        nextRef.current.focus();
+      } else {
+        handleSave();
+        priceRef.current?.blur();
+      }
+    }
+  };
+
   return (
     <div className="w-[90%] rounded-2xl flex flex-col justify-center overflow-clip">
       <div className="grid grid-cols-2 text-center font-normal text-3xl rounded-t-2xl w-full">
@@ -152,9 +170,11 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
+            ref={prodRefRef}
             type="text"
             value={prodRef}
             onChange={(e) => setProdRef(e.target.value)}
+            onKeyDown={(e) => handleEnter(e, typeRef)}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             placeholder="Referência de peça"
           />
@@ -165,9 +185,11 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
+            ref={typeRef}
             type="text"
             value={type}
             onChange={(e) => setType(e.target.value)}
+            onKeyDown={(e) => handleEnter(e, colorRef)}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             placeholder="Tipo de peça"
           />
@@ -178,9 +200,11 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
+            ref={colorRef}
             type="text"
             value={color}
             onChange={(e) => setColor(e.target.value)}
+            onKeyDown={(e) => handleEnter(e, styleRef)}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             placeholder="Cor de peça"
           />
@@ -191,9 +215,11 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
+            ref={styleRef}
             type="text"
             value={style}
             onChange={(e) => setStyle(e.target.value)}
+            onKeyDown={(e) => handleEnter(e, priceRef)}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             placeholder="Estilo de peça (Se existente)"
           />
@@ -204,9 +230,11 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
         </div>
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
           <input
+            ref={priceRef}
             type="text"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
+            onKeyDown={(e) => handleEnter(e, null)} // último input → submit
             className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             placeholder="Valor de peça"
           />

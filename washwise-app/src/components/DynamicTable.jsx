@@ -14,24 +14,26 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, save
   const [nextItem, setNextItem] = useState(0);
 
   useEffect(() => {
-      window.api.getLastReceipt()
-        .then(response => {
-          if (response.success) {
-            setNextItem(response.item.id + 1);
-          } else {
-            setNextItem(1);
-          }
-        })
-        .catch(error => {
-          console.error("Erro a procurar último item:", error);
-        });
+    window.api.getNextReceiptId()
+      .then(response => {
+        if (response.success) {
+          setNextItem(response.nextId);
+        } else {
+          setNextItem(1);
+        }
+      })
+      .catch(error => {
+        console.error("Erro a obter próximo id do talão:", error);
+        setNextItem(1);
+      });
   }, [saveTrigger]);
 
-  useEffect(() => {
-    if (activeTab !== "Novo Talão") {
-      setItems([]);
-    }
-  }, [activeTab]);
+  //Descomentar para itens da tabela sairem ao mudar tab
+  // useEffect(() => {
+  //   if (activeTab !== "Novo Talão") {
+  //     setItems([]);
+  //   }
+  // }, [activeTab]);
 
   // Sempre que os items mudarem, atualiza o estado local
   useEffect(() => {

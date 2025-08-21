@@ -398,7 +398,7 @@ ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
 
 
 
-//operações de produtos
+//operações de taloes
 ipcMain.handle("save-receipt", async (event, receipt) => {
   return saveReceipt(receipt);
 });
@@ -484,18 +484,38 @@ ipcMain.handle("edit-client", async (event, client) => {
   }
 });
 
-ipcMain.handle("get-last-receipt", () => {
+ipcMain.handle("get-next-receipt-id", () => {
   try {
-    const item = db.prepare("SELECT * FROM receipts ORDER BY id DESC limit 1").get();
-    return {success: true, item: item};
+    const row = db.prepare(`
+      SELECT COALESCE(seq, 0) + 1 AS next_id
+      FROM sqlite_sequence
+      WHERE name = 'receipts'
+    `).get();
+
+    return { success: true, nextId: row.next_id };
   } catch (error) {
-    console.error("Erro ao obter último item:", error);
-    return {success: false, message: "Erro ao obter último talão" };
+    console.error("Erro ao obter próximo id:", error);
+    return { success: false, message: "Erro ao obter próximo número do talão" };
   }
 });
 
-
 //operações de peças
+ipcMain.handle("get-refs", () => {
+  try {
+    const rows = db.prepare("SELECT * FROM products").all();
+    return {
+      success: true,
+      data: rows
+    };
+  } catch (error) {
+    console.error("Erro ao procurar referências:", error);
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+});
+
 ipcMain.handle("get-produtos-ref", (event, searchTerm) => {
   try {
     const query = `

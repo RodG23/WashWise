@@ -264,6 +264,10 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
     }
   };
 
+  const handleBlur = () => {
+    setTimeout(() => setShowOptions(false), 200); 
+  };
+
   return (
   <div className='h-full w-full grid grid-cols-3'>
     {/* Lista de seleção do tipo de pesquisa */}
@@ -271,7 +275,14 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
       <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
         <p>Filtrar por:</p>
       </div>
-      <div className="row-start-1 relative w-[70%] cursor-pointer">
+      <div className="row-start-1 relative w-[70%] cursor-pointer"
+          tabIndex={0}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setShowOptions(false);
+            }
+          }}
+        >
         <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptions}>
           <input
             type="text"
@@ -289,6 +300,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
             {["data", "id", "cliente"].map((option, index) => (
               <li
                 key={index}
+                tabIndex={0}
                 className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
                   hover:bg-stone-400 hover:rounded-2xl ${searchType === option ? "bg-stone-400 rounded-2xl" : ""}`}
                 onClick={() => handleOptionSelect(option)}
@@ -386,7 +398,14 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
           <div className="flex w-[30%] text-3xl mt-3 mb-1 overflow-clip">
             <p>Estado:</p>
           </div>
-          <div className="row-start-1 relative w-[30%] cursor-pointer">
+          <div className="row-start-1 relative w-[30%] cursor-pointer"
+            tabIndex={0}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                setShowOptionsState(false);
+              }
+            }}
+          >
             <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptionsState}>
               <input
                 type="text"
@@ -404,6 +423,7 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
                 {["Todos", "Pendente", "Pago", "Entregue"].map((option, index) => (
                   <li
                     key={index}
+                    tabIndex={0}
                     className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
                       hover:bg-stone-400 hover:rounded-2xl ${searchTypeState === option ? "bg-stone-400 rounded-2xl" : ""}`}
                     onClick={() => handleOptionSelectState(option)}
