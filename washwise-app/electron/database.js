@@ -45,6 +45,30 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_clients_number ON clients(number);
   CREATE INDEX IF NOT EXISTS idx_receipts_created_at ON receipts(created_at);
   CREATE INDEX IF NOT EXISTS idx_products_description ON products(description);
+
+  CREATE TRIGGER IF NOT EXISTS unique_number_except_s
+  BEFORE INSERT ON clients
+  FOR EACH ROW
+  WHEN NEW.number != 'S'
+  BEGIN
+    SELECT
+      CASE
+        WHEN EXISTS (SELECT 1 FROM clients WHERE number = NEW.number AND number != 'S')
+        THEN RAISE(ABORT, 'Número de telefone já existe')
+    END;
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS unique_number_except_s_update
+  BEFORE UPDATE OF number ON clients
+  FOR EACH ROW
+  WHEN NEW.number != 'S'
+  BEGIN
+    SELECT
+      CASE
+        WHEN EXISTS (SELECT 1 FROM clients WHERE number = NEW.number AND number != 'S' AND id != NEW.id)
+        THEN RAISE(ABORT, 'Número de telefone já existe')
+    END;
+  END;
 `);
 
 console.log("Base de dados carregada!");
