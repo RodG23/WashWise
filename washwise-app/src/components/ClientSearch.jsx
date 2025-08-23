@@ -47,7 +47,10 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
         if (response.success) {
           const clientes = response.data;
           clientes.sort((a, b) => a.name.localeCompare(b.name));
-          setResult(clientes);}})
+          setResult(clientes);
+        } else if (!response.success) {
+          setResult([]);
+        }})
     .catch((error) => {
       console.error("Erro ao procurar clientes:", error);
     });

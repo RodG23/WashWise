@@ -49,7 +49,7 @@ const SavePrintButton = ({ onSave, client, items, checkbox }) => {
     };
 
     const response = await window.api.saveAndPrintReceipt(receipt);
-    console.log(response);
+    //console.log(response);
     if (response.success) {
       toast.success("Talão criado com sucesso!", {
         toastId: "save-success",
