@@ -5,9 +5,13 @@ import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 import { screen } from "electron";
 import fs from 'fs';
+import Database from "better-sqlite3";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const userDataPath = app.getPath("userData");
+const dbPath = path.join(userDataPath, "washwise.db");
 const isDev = !app.isPackaged;
 let mainWindow;
 
@@ -107,6 +111,23 @@ if (!gotLock) {
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
   });
+}
+
+async function backupDatabase() {
+  try {
+    const table_date = new Date().toLocaleDateString('pt-PT').replaceAll("/","-");
+    const sourceDb = new Database(dbPath, { readonly: true });
+    //const desktopPath = app.getPath('desktop');
+    const backupPath = path.join("F:\\", `backup-${table_date}.db`);
+    
+    await sourceDb.backup(backupPath); // espera o backup terminar
+    sourceDb.close();
+
+    return { success: true, path: backupPath };
+  } catch (err) {
+    console.error('Erro durante o backup:', err);
+    return { success: false, message: err.message };
+  }
 }
 
 async function saveReceipt(receipt) {
@@ -290,7 +311,7 @@ async function printReceipt(receipt) {
   }
 }
 
-async function printNumber(id, name) {
+async function printNumber(id, name, state) {
   try {
     const printer = new ThermalPrinter({
       type: PrinterTypes.EPSON, // 'star' or 'epson'
@@ -313,7 +334,11 @@ async function printNumber(id, name) {
     printer.println(id);
     printer.newLine();
     printer.setTextSize(1,1);
-    printer.println(name);
+    if (state === "Pago") {
+      printer.println(`${name} - Pago`);
+    } else {
+      printer.println(name);
+    }
     printer.cut();
 
     try {
@@ -399,6 +424,10 @@ ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
 
 
 //operações de taloes
+ipcMain.handle("backup-db", async () => {
+  return await backupDatabase();
+});
+
 ipcMain.handle("save-receipt", async (event, receipt) => {
   return saveReceipt(receipt);
 });
@@ -414,8 +443,8 @@ ipcMain.handle("print-receipt", async (event, receipt) => {
   return printReceipt({...receipt, receipt_id: receipt.id, client_name: receipt.name, products: JSON.parse(receipt.products_list)});
 });
 
-ipcMain.handle("print-number", async (event, id, name) => {
-  return printNumber(id, name);
+ipcMain.handle("print-number", async (event, id, name, state) => {
+  return printNumber(id, name, state);
 });
   
 ipcMain.handle("add-cliente", async (event, cliente) => {
@@ -430,6 +459,11 @@ ipcMain.handle("add-cliente", async (event, cliente) => {
     return { success: true, message: "Cliente criado com sucesso!" };
   } catch (error) {
     console.error("Erro ao adicionar cliente:", error);
+
+    if (error.message.includes("Número de telefone já existe")) {
+      return { success: false, message: "Número de telefone já existe!" };
+    }
+
     return { success: false, message: "Erro ao criar cliente." };
   }
 });
@@ -480,6 +514,11 @@ ipcMain.handle("edit-client", async (event, client) => {
     }
   } catch (error) {
     console.error("Erro ao editar cliente:", error);
+
+    if (error.message.includes("Número de telefone já existe")) {
+      return { success: false, message: "Número de telefone já existe!" };
+    }
+
     return { success: false, message: "Ocorreu um erro inesperado." };
   }
 });

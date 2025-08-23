@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, forwardRef } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 
 //Passa para app descript, ref e price, deve ser suficiente
-const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef }, ref) => {
+const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef, searchType }, ref) => {
   const [result, setResult] = useState([]); //resultado de pesquisa
   const [input, setInput] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0); //indice da pesquisa
@@ -17,18 +17,38 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
     }
   }, [clearInputTrigger]);
 
+  useEffect(() => {
+      setInput("");
+      setResult([]);
+  }, [searchType]);
+
   const filterRefs = (value) => {
     if (value === "" || !value) {
       setResult([]);
       return;
     }
 
-    window.api.getProdutosRef(value)
-    .then((response) => {
-      if (response.success) {
-        const pecas = response.data;
-        setResult(pecas);
-      }});
+    if(searchType === "ref") {
+      window.api.getProdutosRef(value)
+      .then((response) => {
+        if (response.success) {
+          const pecas = response.data;
+          setResult(pecas);
+        } else if (!response.success) {
+          setResult([]);
+        }
+      });
+    } else if (searchType === "name") {
+      window.api.getProdutosDescription(value)
+      .then((response) => {
+        if (response.success) {
+          const pecas = response.data;
+          setResult(pecas);
+        } else if (!response.success) {
+          setResult([]);
+        }
+      });
+    }
   };
 
 
@@ -91,7 +111,7 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
         <input
           ref={ref}
           type="text"
-          placeholder="Procurar Peça..."
+          placeholder={searchType === "ref" ? "Procurar Referência de Peça" : "Procurar Nome de Peça"}
           className="bg-transparent border-none outline-none text-xl ml-1 w-full"
           value={input}
           onChange={(e) => handleChange(e.target.value)}

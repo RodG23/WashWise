@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 import ClientSearch from "./components/ClientSearch"
 import RefSearch from "./components/RefSearch"
@@ -25,9 +25,11 @@ import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
 import { LuBookType } from 'react-icons/lu';
 import { GiClothesline } from "react-icons/gi";
+import { FaCloudDownloadAlt } from "react-icons/fa";
+import { IoBarcodeSharp } from "react-icons/io5";
+import { LuLetterText } from "react-icons/lu";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
 
 function App() {
   //aba novo talao
@@ -39,6 +41,7 @@ function App() {
   const [items, setItems] = useState([]); //Estado itens talão
   const [clearInputTrigger, setClearInputTrigger] = useState(1); //Atualizando limpa input
   const [saveTrigger, setSaveTrigger] = useState(1); //Atualizando limpa input
+  const [refSearchType, setRefSearchType] = useState("ref");
   const refSearchRef = useRef(null); //Ref para input de peça
   const quantityInputRef = useRef(null); //Ref para quantidade de peça
 
@@ -54,6 +57,8 @@ function App() {
   const [filteredReceipts, setFilteredReceipts] = useState([]); // Estado para armazenar os talões filtrados
   const [selectedReceiptEdit, setSelectedReceiptEdit] = useState(null); // Estado para guardar o talão selecionado para editar
 
+  //app geral
+  const lastActiveTab = useRef(activeTab);
 
 
   const tabs = [
@@ -62,6 +67,45 @@ function App() {
     { name: "Clientes", icon: <LuUsersRound size={30} />, id: "clientes" },
     { name: "Peças", icon: <GiClothesline size={30}/>, id: "peças" },
   ];
+  //app geral
+  useEffect(() => {
+    const previousTab = lastActiveTab.current;
+    if (previousTab === "talão" && activeTab !== "talão") {
+      // Saiu da aba Novo Talão
+      setRefSearchType("ref");
+    } else if (previousTab === "clientes" && activeTab !== "clientes") {
+      // Saiu da aba Clientes
+      setFilteredClients([]);
+    } else if (previousTab === "peças" && activeTab !== "peças") {
+      // Saiu da aba Peças
+      setFilteredRefs([]);
+    } else if (previousTab === "talões" && activeTab !== "talões") {
+      // Saiu da aba Talões
+      setFilteredReceipts([]);
+    }
+    lastActiveTab.current = activeTab;
+  }, [activeTab]);
+
+  const backupDatabase = () => {
+    window.api.backupDb()
+    .then(response => {
+      if (response.success) {
+        toast.success("Base de Dados guardada com sucesso!" ,{
+          toastId: "backup-bd-success",
+        });
+      } else {
+        toast.warn("Erro ao guardar Base de Dados", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "custom-warn-toast",
+          progressClassName: "custom-warn-progress",
+        });
+      }
+    })
+    .catch(error => {
+      console.error("Erro guardar Base de Dados", error);
+    });
+  }
 
   //aba novo talao
   //atualiza ref peça
@@ -96,7 +140,7 @@ function App() {
   //adiciona item talao
   const addItem = () => {
     if (ref && quantity) {
-      const newItem = { ...ref, quantity, bagged: false };
+      const newItem = { ...ref, quantity, bagged: 0 };
       setItems((prevItems) => [...prevItems, newItem]);
       setRef("");
       setQuantity("1");
@@ -118,6 +162,7 @@ function App() {
     setClient([]);
     setCheckbox("");
     setItems([]);
+    setRefSearchType("ref");
   }
 
   //retira item talao
@@ -199,7 +244,7 @@ function App() {
             <button
               key={tab.id}
               className={`flex flex-col flex-1 items-center justify-center ${
-                activeTab === tab.id ? "bg-[#E1E4F1] font-medium border-b-2 border-l-1 border-r-1 border-[#AFAFAF]" : "bg-white border-l-1 border-r-1 border-[#D1D1D1]"
+                activeTab === tab.id ? "bg-[#9296aa] font-medium border-b-2 border-l-1 border-r-1 border-[#AFAFAF]" : "bg-white border-l-1 border-r-1 border-[#D1D1D1]"
               }`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -235,9 +280,19 @@ function App() {
             <div className="grid grid-cols-2 justify-start items-center col-span-2 row-start-1 bg-[#E1E4F1]">
               <div className="h-full ml-1 flex-col flex justify-center">
                 <div className="flex w-[70%] text-3xl overflow-clip mt-3 mb-1">
-                  <p>Peça:</p>
+                  <div className="flex flex-row items-end">
+                    <p>Peça:</p>
+                    <IoBarcodeSharp 
+                      onClick={() => setRefSearchType("ref")}
+                      className={`size-8 ml-5 ${refSearchType === "ref" ? "text-[#31418f]" : "opacity-50"}`}
+                      />
+                    <LuLetterText 
+                      className={`size-8 ml-3 ${refSearchType === "name" ? "text-[#31418f]" : "opacity-50"}`}
+                      onClick={() => setRefSearchType("name")}
+                      />
+                  </div>
                 </div>
-                <RefSearch clearInputTrigger={clearInputTrigger} onRefChange={getRef} ref={refSearchRef} quantityInputRef={quantityInputRef}/>
+                <RefSearch clearInputTrigger={clearInputTrigger} onRefChange={getRef} ref={refSearchRef} quantityInputRef={quantityInputRef} searchType={refSearchType}/>
               </div>
               <div className="grid grid-cols-2 h-full ml-1 ">
                 <div className="flex flex-col justify-center h-full items-start overflow-clip">
@@ -246,8 +301,12 @@ function App() {
                   </div>
                   <QuantitySelector clearInputTrigger={clearInputTrigger} onQuantityChange={getQuantity} refSearchRef={refSearchRef} onClick={addItem} ref={quantityInputRef}/>
                 </div>
-                <div className="flex flex-col justify-center h-full items-start mt-5">
+                <div className="flex justify-between h-full items-center mt-5">
                   <AddButton onClick={addItem}/>
+                  <FaCloudDownloadAlt 
+                    className="size-12 opacity-55 cursor-pointer hover:opacity-100 mr-12 transition duration-200 active:scale-90"
+                    onClick={backupDatabase}
+                    />
                 </div>
               </div>
             </div>
