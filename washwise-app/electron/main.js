@@ -130,6 +130,23 @@ async function backupDatabase() {
   }
 }
 
+// async function add_column() {
+//   try {
+//     const sourceDb = new Database(dbPath);
+//     console.log(dbPath);
+//     const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+//     const products = sourceDb.prepare("SELECT ref, description FROM products").all();
+//     const updateStmt = sourceDb.prepare("UPDATE products SET description_normalized = ? WHERE ref = ?");
+
+//     products.forEach(p => updateStmt.run(normalize(p.description), p.ref));
+//     return { success: true, path: backupPath };
+//   } catch (err) {
+//     console.error('Erro durante o backup:', err);
+//     return { success: false, message: err.message };
+//   }
+// }
+
 async function saveReceipt(receipt) {
   try {
     const now = new Date();
@@ -142,7 +159,7 @@ async function saveReceipt(receipt) {
       receipt.client_id,
       JSON.stringify(receipt.products),
       receipt.state,
-      receipt.total_price,
+      Math.trunc(receipt.total_price*100)/100,
       receipt.date,
       createdAt
     );
@@ -584,7 +601,8 @@ ipcMain.handle("get-produtos-ref", (event, searchTerm) => {
 
 ipcMain.handle("get-produtos-description", (event, searchTerm) => {
   try {
-    const searchTermStr = String(searchTerm).toLowerCase(); // pesquisa case-insensitive
+    const searchTermStr = String(searchTerm).normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // pesquisa case-insensitive
 
     const query = `
       SELECT 
@@ -595,7 +613,7 @@ ipcMain.handle("get-produtos-description", (event, searchTerm) => {
         description, 
         price
       FROM products
-      WHERE LOWER(description) LIKE ?;
+      WHERE description_normalized LIKE ?;
     `;
 
     const result = db.prepare(query).all(`%${searchTermStr}%`);
@@ -647,9 +665,13 @@ ipcMain.handle("add-ref", (event, product) => {
       return { success: false, message: "Já existe uma peça com esta referência." };
     }
 
+    const normalizedDescription = product.description
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // remove acentos
+
     // Prepara a instrução SQL para inserir a peça
-    const stmt = db.prepare("INSERT INTO products (ref, type, color, style, description, price) VALUES (?, ?, ?, ?, ?, ?)");
-    stmt.run(product.prodRef, product.type, product.color, product.style || "", product.description, floatPrice);
+    const stmt = db.prepare("INSERT INTO products (ref, type, color, style, description, price, description_normalized) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    stmt.run(product.prodRef, product.type, product.color, product.style || "", product.description, floatPrice, normalizedDescription);
 
     return { success: true, message: "Peça criada com sucesso!" };
   } catch (error) {
@@ -680,16 +702,20 @@ ipcMain.handle("edit-ref", (event, product) => {
         return { success: false, message: "Já existe uma peça com a nova referência." };
       }
     }
+    
+    const normalizedDescription = product.description
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // remove acentos
 
     // Prepara a instrução SQL para atualizar os dados da peça
     const stmt = db.prepare(`
       UPDATE products
-      SET ref = ?, type = ?, color = ?, style = ?, description = ?, price = ?
+      SET ref = ?, type = ?, color = ?, style = ?, description = ?, price = ?, description_normalized = ?
       WHERE ref = ?
     `);
 
     // Executa a atualização na base de dados
-    const result = stmt.run(prodRef, type, color, style || "", description, floatPrice, oldProdRef);
+    const result = stmt.run(prodRef, type, color, style || "", description, floatPrice, normalizedDescription, oldProdRef);
 
     // Verifica se a atualização foi bem-sucedida
     if (result.changes > 0) {

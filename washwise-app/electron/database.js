@@ -27,6 +27,7 @@ db.exec(`
     color TEXT NOT NULL,
     style TEXT,
     description TEXT NOT NULL,
+    description_normalized TEXT,
     price REAL NOT NULL
   );
 
