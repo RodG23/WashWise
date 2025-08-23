@@ -212,16 +212,16 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                 <table className="w-full h-full table-fixed">
                 <thead className="sticky top-0 z-20 bg-white">
                     <tr className="">
-                    <th className="w-1/6 p-2 font-normal text-xl text-center border-2 border-r-4 border-b-4 border-t-0 border-[#B8B8B8] pt-5 pb-5">
+                    <th className="w-4/24 p-2 font-normal text-xl text-center border-2 border-r-4 border-b-4 border-t-0 border-[#B8B8B8] pt-5 pb-5">
                         Qt.
                     </th>
-                    <th className="w-3/6 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-[#B8B8B8]">
+                    <th className="w-11/24 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-[#B8B8B8]">
                         Peça
                     </th>
-                    <th className="w-1/6 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-l-0 border-[#B8B8B8]">
+                    <th className="w-5/24 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-l-0 border-[#B8B8B8]">
                         Nota
                     </th>
-                    <th className="w-1/6 p-2 pl-1 font-normal text-xl text-center border-2 border-l-0 border-b-4 border-t-0 border-[#B8B8B8]">
+                    <th className="w-4/24 p-2 pl-1 font-normal text-xl text-center border-2 border-l-0 border-b-4 border-t-0 border-[#B8B8B8]">
                         Ensacado
                     </th>
                     </tr>
@@ -247,6 +247,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                                 type="text"
                                 className="w-full bg-transparent border-none outline-none text-xl truncate"
                                 value={receipt.description ?? ""}
+                                title={receipt.description ?? ""}
                                 onChange={(e) => handleDescriptionChange(index, e.target.value)}
                                 placeholder="Descrição da peça"
                             />
@@ -258,6 +259,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                                 type="text"
                                 className="w-full bg-transparent border-none outline-none text-xl truncate"
                                 value={receipt.note ?? ""}
+                                title={receipt.note ?? ""}
                                 onChange={(e) => handleNoteChange(index, e.target.value)}
                                 placeholder="..."
                             />

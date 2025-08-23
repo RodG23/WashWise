@@ -283,12 +283,18 @@ function App() {
                   <div className="flex flex-row items-end">
                     <p>Peça:</p>
                     <IoBarcodeSharp 
-                      onClick={() => setRefSearchType("ref")}
-                      className={`size-8 ml-5 ${refSearchType === "ref" ? "text-[#31418f]" : "opacity-50"}`}
+                      onClick={() => {
+                        setRefSearchType("ref");
+                        refSearchRef.current?.focus();
+                      }}
+                      className={`size-8 ml-5 cursor-pointer ${refSearchType === "ref" ? "text-[#31418f]" : "opacity-50"}`}
                       />
                     <LuLetterText 
-                      className={`size-8 ml-3 ${refSearchType === "name" ? "text-[#31418f]" : "opacity-50"}`}
-                      onClick={() => setRefSearchType("name")}
+                      className={`size-8 ml-3 cursor-pointer ${refSearchType === "name" ? "text-[#31418f]" : "opacity-50"}`}
+                      onClick={() => {
+                        setRefSearchType("name");
+                        refSearchRef.current?.focus();
+                      }}
                       />
                   </div>
                 </div>
