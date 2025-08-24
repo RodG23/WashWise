@@ -75,7 +75,7 @@ npm run electron
 
 Download and execute the installer.
 
- [![Download](https://img.shields.io/badge/download-installer-green)](https://github.com/RodG23/WashWise/WashWise_Setup.exe)
+ [![Download](https://img.shields.io/badge/download-installer-green)](https://github.com/RodG23/WashWise/raw/main/WashWise_Setup.exe)
 
 
 ---
