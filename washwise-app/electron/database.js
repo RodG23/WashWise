@@ -42,6 +42,10 @@ db.exec(`
     FOREIGN KEY (client_id) REFERENCES clients(id)
   );
 
+  CREATE VIRTUAL TABLE IF NOT EXISTS products_fts 
+  USING fts5(description_normalized, content='products', content_rowid='rowid');
+
+
   CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name);
   CREATE INDEX IF NOT EXISTS idx_clients_number ON clients(number);
   CREATE INDEX IF NOT EXISTS idx_receipts_created_at ON receipts(created_at);
@@ -69,6 +73,23 @@ db.exec(`
         WHEN EXISTS (SELECT 1 FROM clients WHERE number = NEW.number AND number != 'S' AND id != NEW.id)
         THEN RAISE(ABORT, 'Número de telefone já existe')
     END;
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS products_ai AFTER INSERT ON products BEGIN
+    INSERT INTO products_fts(rowid, description_normalized)
+    VALUES (new.rowid, new.description_normalized);
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS products_ad AFTER DELETE ON products BEGIN
+    INSERT INTO products_fts(products_fts, rowid, description_normalized)
+    VALUES('delete', old.rowid, old.description_normalized);
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS products_au AFTER UPDATE ON products BEGIN
+    INSERT INTO products_fts(products_fts, rowid, description_normalized)
+    VALUES('delete', old.rowid, old.description_normalized);
+    INSERT INTO products_fts(rowid, description_normalized)
+    VALUES (new.rowid, new.description_normalized);
   END;
 `);
 

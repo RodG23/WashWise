@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { IoIosArrowDropup } from "react-icons/io";
+import { TbArrowBigDownLines } from "react-icons/tb";
 import { HiOutlineIdentification } from "react-icons/hi";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -214,6 +215,9 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                     <tr className="">
                     <th className="w-4/24 p-2 font-normal text-xl text-center border-2 border-r-4 border-b-4 border-t-0 border-[#B8B8B8] pt-5 pb-5">
                         Qt.
+                        {receiptsWithEmptyRows.length > 4 && (
+                            <TbArrowBigDownLines className="inline text-blue-700" />
+                        )}
                     </th>
                     <th className="w-11/24 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-[#B8B8B8]">
                         Peça

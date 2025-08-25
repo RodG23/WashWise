@@ -604,19 +604,27 @@ ipcMain.handle("get-produtos-description", (event, searchTerm) => {
     const searchTermStr = String(searchTerm).normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // pesquisa case-insensitive
 
+
+    const tokens = searchTermStr
+      .split(/\s+/)
+      .filter(t => t.length > 0)
+      .map(t => t + "*")
+      .join(" AND ");
+
     const query = `
       SELECT 
-        ref, 
-        type, 
-        color, 
-        style, 
-        description, 
-        price
-      FROM products
-      WHERE description_normalized LIKE ?;
+        p.ref, 
+        p.type, 
+        p.color, 
+        p.style, 
+        p.description, 
+        p.price
+      FROM products p
+      JOIN products_fts fts ON p.rowid = fts.rowid
+      WHERE fts.description_normalized MATCH '${tokens}';
     `;
 
-    const result = db.prepare(query).all(`%${searchTermStr}%`);
+    const result = db.prepare(query).all();
 
     if (result.length === 0) {
       return { success: false, message: "Nenhuma peça encontrado com esse nome." };
