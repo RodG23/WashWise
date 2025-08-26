@@ -220,7 +220,14 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                         )}
                     </th>
                     <th className="w-11/24 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-[#B8B8B8]">
-                        Peça
+                        Peça {selectedReceiptEdit && (
+                            <> (
+                            {receiptsWithEmptyRows.reduce(
+                                (acc, item) => acc + Number(item?.quantity || 0),
+                                0
+                            )}
+                            )</>
+                        )}
                     </th>
                     <th className="w-5/24 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-l-0 border-[#B8B8B8]">
                         Nota

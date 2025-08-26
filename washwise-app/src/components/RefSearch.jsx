@@ -33,6 +33,7 @@ const RefSearch = forwardRef(({ clearInputTrigger, onRefChange, quantityInputRef
       .then((response) => {
         if (response.success) {
           const pecas = response.data;
+          pecas.sort((a, b) => a.ref.localeCompare(b.ref));
           setResult(pecas);
         } else if (!response.success) {
           setResult([]);
