@@ -345,6 +345,9 @@ async function printNumber(id, name, state) {
   
     const isConnected = await printer.isPrinterConnected();
     console.log('Printer connected:', isConnected);
+
+    printer.println();
+    printer.println();
   
     printer.alignCenter();
     printer.setTextSize(7,7);
@@ -601,15 +604,19 @@ ipcMain.handle("get-produtos-ref", (event, searchTerm) => {
 
 ipcMain.handle("get-produtos-description", (event, searchTerm) => {
   try {
+    console.log(searchTerm);
     const searchTermStr = String(searchTerm).normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // pesquisa case-insensitive
+      .replace(/[\u0300-\u036f]/g, "").replace(/[-_]/g, " ").toLowerCase(); // pesquisa case-insensitive
 
+    console.log(searchTermStr);
 
     const tokens = searchTermStr
       .split(/\s+/)
       .filter(t => t.length > 0)
       .map(t => t + "*")
       .join(" AND ");
+
+      console.log(tokens);
 
     const query = `
       SELECT 

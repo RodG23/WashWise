@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Função para filtrar os clientes
-const ReceiptFilters = ({ updateFilteredReceipts }) => {
+const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
   const [searchType, setSearchType] = useState("data"); // Tipo de filtro selecionado
   const [searchTypeState, setSearchTypeState] = useState("Todos"); // Tipo de filtro selecionado
   const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
@@ -72,9 +72,11 @@ const ReceiptFilters = ({ updateFilteredReceipts }) => {
       window.api.getReceiptById(debouncedTerm)
         .then((response) => {
           if(response.success) {
-            const receipt = [response.receipt];
-            receipt.forEach(setReceiptDate);
-            updateFilteredReceipts(receipt);
+            const receipt = response.receipt;
+            setReceiptDate(receipt);
+            updateFilteredReceipts([receipt]);
+            onReceiptSelect(receipt);
+
           } else {
             toast.warn(response.message, {
             position: "top-right",

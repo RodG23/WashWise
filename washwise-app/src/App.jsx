@@ -334,7 +334,7 @@ function App() {
           <>
             <div className="h-full grid grid-cols-6 grid-rows-5">
               <div className="row-start-1 col-span-6 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
-                <ReceiptFilters updateFilteredReceipts={updateFilteredReceipts}/>
+                <ReceiptFilters updateFilteredReceipts={updateFilteredReceipts} onReceiptSelect={handleReceiptSelectForEdit}/>
               </div>
               <div className="col-span-4 row-span-4 row-start-2 col-start-1 bg-[#E1E4F1] flex items-center justify-center">
                 <ReceiptTable filteredReceipts={filteredReceipts} updateFilteredReceipts={updateFilteredReceipts} selectedReceiptId={selectedReceiptEdit?.id} onReceiptSelect={handleReceiptSelectForEdit}/>

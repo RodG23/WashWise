@@ -82,7 +82,9 @@ const RefFilters = ({ updateFilteredRefs }) => {
       window.api.getProdutosDescription(debouncedTerm)
         .then((response) => {
           if (response.success) {
-            updateFilteredRefs(response.data);
+            const pecas = response.data;
+            pecas.sort((a, b) => a.ref.localeCompare(b.ref));
+            updateFilteredRefs(pecas);
           } else {
             toast.warn(response.message, {
               position: "top-right",
