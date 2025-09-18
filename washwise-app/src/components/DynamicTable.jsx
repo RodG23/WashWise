@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { IoIosClose } from "react-icons/io";
+import { TbIroningSteamFilled } from "react-icons/tb";
+
 
 const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, saveTrigger}) => {
   const numberOfItemsToRender = 8;
@@ -103,10 +105,16 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, save
               <td className="p-2 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8]">
                 <div className="flex justify-center">
                   {item?.description && (
+                    <div className="flex items-center "> 
+                    <TbIroningSteamFilled 
+                      className="size-7 opacity-55 cursor-pointer hover:opacity-100"
+                      onClick={() => onNoteChange(index, "Só passar")}
+                    />
                     <IoIosClose
-                      className="size-12 opacity-55 cursor-pointer hover:opacity-100"
+                      className="size-12 opacity-55 cursor-pointer hover:opacity-100 ml-10"
                       onClick={() => onDelete(index)}
                     />
+                    </div>
                   )}
                 </div>
               </td>
