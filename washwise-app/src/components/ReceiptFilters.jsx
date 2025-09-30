@@ -102,6 +102,33 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
         .catch((error) => {
           console.error("Erro ao procurar clientes:", error);
         });
+    } else if (searchType === "telefone") {
+      if (debouncedTerm.length < 9) { 
+        setReceiptsAllStates([]);
+        updateFilteredReceipts([]); 
+        return;
+      }
+      window.api.getReceiptsByNumber(debouncedTerm)
+        .then((response) => {
+          if (response.success) {
+            const receipts = response.receipts.reverse();
+            receipts.forEach(setReceiptDate);
+            setReceiptsAllStates(receipts);
+            handleStates(receipts);
+          } else {
+            toast.warn(response.message, {
+            position: "top-right",
+            autoClose: 3000,
+            className: "custom-warn-toast",
+            progressClassName: "custom-warn-progress",
+            });
+            setReceiptsAllStates([]);
+            updateFilteredReceipts([]);
+          }
+        })
+        .catch(() => {
+          console.error("Erro ao procurar talão pelo número: ", error);
+        });
     }
   };
 
@@ -290,7 +317,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
             type="text"
             placeholder={""}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
-            value={searchType === "data" ? "Intervalo de Datas" : searchType === "id" ? "Número de Talão" : "Nome de Cliente"}
+            value={searchType === "data" ? "Intervalo de Datas" : searchType === "id" ? "Número de Talão" : searchType === "cliente" ? "Nome de Cliente" : "Número de Telefone"}
             readOnly
           />
           <IoIosArrowDropdown className="size-6" />
@@ -299,7 +326,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
         {/* Lista de opções */}
         {showOptions && (
           <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
-            {["data", "id", "cliente"].map((option, index) => (
+            {["data", "id", "cliente", "telefone"].map((option, index) => (
               <li
                 key={index}
                 tabIndex={0}
@@ -307,7 +334,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
                   hover:bg-stone-400 hover:rounded-2xl ${searchType === option ? "bg-stone-400 rounded-2xl" : ""}`}
                 onClick={() => handleOptionSelect(option)}
               >
-                <span>{option === "data" ? "Intervalo de Datas" : option === "id" ? "Número de Talão" : "Nome de Cliente"}</span>
+                <span>{option === "data" ? "Intervalo de Datas" : option === "id" ? "Número de Talão" : option === "cliente" ? "Nome de Cliente" : "Número de Telefone"}</span>
               </li>
             ))}
           </ul>
@@ -345,10 +372,10 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
     )}
 
     {/* Campo de Pesquisa para ID ou Cliente */}
-    {(searchType === "id" || searchType === "cliente") && (
+    {(searchType === "id" || searchType === "cliente" || searchType === "telefone") && (
       <div className="h-full ml-1 flex-col flex justify-center">
         <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
-          <p>{`${searchType === "id" ? "Número de Talão:" : "Nome de Cliente:"}`}</p>
+          <p>{`${searchType === "id" ? "Número de Talão:" : searchType === "cliente" ? "Nome de Cliente:" : "Número de Telefone:"}`}</p>
         </div>
         <div className='relative w-[70%]'>
           <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
@@ -360,7 +387,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
               value={searchTerm}
               onChange={(e) => handleChange(e.target.value)} // Atualiza o termo de pesquisa
               onKeyDown={handleKeyDown}
-              placeholder={searchType === "id" ? "Procurar Talão..." : "Procurar Cliente..."}
+              placeholder={searchType === "id" ? "Procurar Talão..." : searchType === "cliente" ? "Procurar Cliente..." : "Procurar Número..."}
               className="bg-transparent border-none outline-none text-xl ml-1 w-full"
             />
           </div>

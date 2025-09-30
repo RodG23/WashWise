@@ -788,6 +788,27 @@ ipcMain.handle("get-receipts-by-client", (event, clientId) => {
   }
 });
 
+ipcMain.handle("get-receipts-by-number", (event, clientNumber) => {
+  try {
+    const query = `
+      SELECT r.*, c.name, c.number AS client_number
+      FROM receipts r
+      INNER JOIN clients c ON r.client_id = c.id
+      WHERE c.number = ?
+    `;
+    const receipts = db.prepare(query).all(clientNumber);
+
+    if (receipts.length > 0) {
+      return { success: true, receipts };
+    } else {
+      return { success: false, message: "Nenhum talão encontrado para este número." };
+    }
+  } catch (error) {
+    console.error("Erro ao procurar talões pelo número do cliente:", error);
+    return { success: false, message: "Erro ao procurar talões pelo número do cliente." };
+  }
+});
+
 ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
   try {
     if(startDate > endDate) {
