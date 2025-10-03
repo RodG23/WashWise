@@ -6,6 +6,12 @@ import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-ther
 import { screen } from "electron";
 import fs from 'fs';
 import Database from "better-sqlite3";
+import { http } from './http.js';
+
+//todo - last - tirr imports que ja nao use
+//todo - last - tirar a db do package no build
+//todo - last - ver o retorno da api e da bd para nao enviar dados para a app quando a app nao os vai usar pe criar cliente
+//todo - last - organizar os codigos de erro
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -76,7 +82,7 @@ function createWindow() {
     mainWindow.loadFile(path.join(app.getAppPath(), '../renderer', 'index.html'));
   }
 
-  //mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // Quando estiver pronto, mostra e fecha o splash
   mainWindow.webContents.on("did-finish-load", () => {
@@ -147,31 +153,43 @@ async function backupDatabase() {
 //   }
 // }
 
+//sqlite
+// async function saveReceipt(receipt) {
+//   try {
+//     const now = new Date();
+//     const createdAt = now.toLocaleString("sv-SE").replace("T", " ");
+//     const stmt = db.prepare(`
+//       INSERT INTO receipts (client_id, products_list, state, total_price, date, created_at)
+//       VALUES (?, ?, ?, ?, ?, ?)
+//     `);
+//     const info = stmt.run(
+//       receipt.client_id,
+//       JSON.stringify(receipt.products),
+//       receipt.state,
+//       Math.trunc(receipt.total_price*100)/100,
+//       receipt.date,
+//       createdAt
+//     );
+//     //console.log(receipt.products);
+
+//     return { success: true, receipt_id: info.lastInsertRowid, client_id: receipt.client_id };
+//   } catch (error) {
+//     console.error("Erro ao guardar o talão: ", error);
+//     return { success: false, error: error.message };
+//   }
+// }
 async function saveReceipt(receipt) {
-  try {
-    const now = new Date();
-    const createdAt = now.toLocaleString("sv-SE").replace("T", " ");
-    const stmt = db.prepare(`
-      INSERT INTO receipts (client_id, products_list, state, total_price, date, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    const info = stmt.run(
-      receipt.client_id,
-      JSON.stringify(receipt.products),
-      receipt.state,
-      Math.trunc(receipt.total_price*100)/100,
-      receipt.date,
-      createdAt
-    );
-    //console.log(receipt.products);
-
-    return { success: true, receipt_id: info.lastInsertRowid, client_id: receipt.client_id };
-  } catch (error) {
-    console.error("Erro ao guardar o talão: ", error);
-    return { success: false, error: error.message };
-  }
+  const payload = {
+    client_id: receipt.client_id,
+    products: receipt.products,
+    state: receipt.state,
+    total_price: receipt.total_price,
+    date: receipt.date
+  };
+  const r = await http.post('/receipts', payload);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, receipt_id:r.data.receipt_id, client_id:r.data.client_id };
 }
-
 
 async function printReceipt(receipt) {
   try {
@@ -377,68 +395,84 @@ async function printNumber(id, name, state) {
 
 
 //operações de clientes
-ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
-  try {
-    const query = "SELECT id, name, number, address FROM clients WHERE name LIKE ?";
-    const result = db.prepare(query).all(`%${searchTerm}%`);
+//sqlite
+// ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
+//   try {
+//     const query = "SELECT id, name, number, address FROM clients WHERE name LIKE ?";
+//     const result = db.prepare(query).all(`%${searchTerm}%`);
 
-    if (result.length === 0) {
-      return { success: false, message: "Nenhum cliente encontrado." };
-    }
+//     if (result.length === 0) {
+//       return { success: false, message: "Nenhum cliente encontrado." };
+//     }
 
-    return { success: true, data: result };
-  } catch (error) {
-    return { success: false, message: "Erro interno ao procurar clientes." };
-  }
+//     return { success: true, data: result };
+//   } catch (error) {
+//     return { success: false, message: "Erro interno ao procurar clientes." };
+//   }
+// });
+ipcMain.handle("get-clientes-search-name", async (_e, term) => {
+  const r = await http.get(`/clients/search?name=${encodeURIComponent(term)}`); //encode adiciona %20 pe
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, data:r.data };
 });
 
 
+//sqlite
+// ipcMain.handle("get-clientes-search-receipt", (event, searchTerm) => {
+//   try {
+//     const query = `
+//       SELECT 
+//         c.id,
+//         c.name,
+//         c.number,
+//         c.address
+//       FROM receipts r
+//       JOIN clients c ON r.client_id = c.id
+//       WHERE r.id = ?;
+//     `;
 
-ipcMain.handle("get-clientes-search-receipt", (event, searchTerm) => {
-  try {
-    const query = `
-      SELECT 
-        c.id,
-        c.name,
-        c.number,
-        c.address
-      FROM receipts r
-      JOIN clients c ON r.client_id = c.id
-      WHERE r.id = ?;
-    `;
+//     const result = db.prepare(query).all(searchTerm);
 
-    const result = db.prepare(query).all(searchTerm);
+//     if (result.length === 0) {
+//       return { success: false, message: "Talão não existe." };
+//     }
 
-    if (result.length === 0) {
-      return { success: false, message: "Talão não existe." };
-    }
-
-    return { success: true, data: result };
-  } catch (error) {
-    return { success: false, message: "Erro interno ao procurar cliente pelo talão." };
-  }
+//     return { success: true, data: result };
+//   } catch (error) {
+//     return { success: false, message: "Erro interno ao procurar cliente pelo talão." };
+//   }
+// });
+ipcMain.handle('get-clientes-search-receipt', async (_e, id) => {
+  const r = await http.get(`/clients/search?receipt_id=${encodeURIComponent(id)}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, data:r.data };
 });
 
+//sqlite
+// ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
+//   try {
+//     const query = `
+//       SELECT 
+//         id, name, address, number
+//       FROM clients
+//       WHERE number LIKE ?;
+//     `;
 
-ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
-  try {
-    const query = `
-      SELECT 
-        id, name, address, number
-      FROM clients
-      WHERE number LIKE ?;
-    `;
+//     const result = db.prepare(query).all(`${searchTerm}%`);
 
-    const result = db.prepare(query).all(`${searchTerm}%`);
+//     if (result.length === 0) {
+//       return { success: false, message: "Nenhum cliente encontrado com esse número." };
+//     }
 
-    if (result.length === 0) {
-      return { success: false, message: "Nenhum cliente encontrado com esse número." };
-    }
-
-    return { success: true, data: result };
-  } catch (error) {
-    return { success: false, message: "Erro interno ao procurar clientes por número." };
-  }
+//     return { success: true, data: result };
+//   } catch (error) {
+//     return { success: false, message: "Erro interno ao procurar clientes por número." };
+//   }
+// });
+ipcMain.handle('get-clientes-search-number', async (_e, term) => {
+  const r = await http.get(`/clients/search?number_prefix=${encodeURIComponent(term)}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, data:r.data };
 });
 
 
@@ -452,6 +486,7 @@ ipcMain.handle("save-receipt", async (event, receipt) => {
   return saveReceipt(receipt);
 });
 
+//todo - first - testar save print quando app estiver construida
 ipcMain.handle("save-print-receipt", async (event, receipt) => {
   const saveResult = await saveReceipt(receipt);
   const table_date = new Date().toLocaleDateString('pt-PT');
@@ -467,141 +502,179 @@ ipcMain.handle("print-number", async (event, id, name, state) => {
   return printNumber(id, name, state);
 });
   
-ipcMain.handle("add-cliente", async (event, cliente) => {
-  if (!cliente.name || !cliente.number || !cliente.address) {
-    return { success: false, message: "Por favor, preencha todos os campos." };
-  }
+//sqlite
+// ipcMain.handle("add-cliente", async (event, cliente) => {
+//   if (!cliente.name || !cliente.number || !cliente.address) {
+//     return { success: false, message: "Por favor, preencha todos os campos." };
+//   }
 
-  try {
-    const stmt = db.prepare("INSERT INTO clients (name, number, address) VALUES (?, ?, ?)");
-    stmt.run(cliente.name, cliente.number, cliente.address);
+//   try {
+//     const stmt = db.prepare("INSERT INTO clients (name, number, address) VALUES (?, ?, ?)");
+//     stmt.run(cliente.name, cliente.number, cliente.address);
 
-    return { success: true, message: "Cliente criado com sucesso!" };
-  } catch (error) {
-    console.error("Erro ao adicionar cliente:", error);
+//     return { success: true, message: "Cliente criado com sucesso!" };
+//   } catch (error) {
+//     console.error("Erro ao adicionar cliente:", error);
 
-    if (error.message.includes("Número de telefone já existe")) {
-      return { success: false, message: "Número de telefone já existe!" };
-    }
+//     if (error.message.includes("Número de telefone já existe")) {
+//       return { success: false, message: "Número de telefone já existe!" };
+//     }
 
-    return { success: false, message: "Erro ao criar cliente." };
-  }
+//     return { success: false, message: "Erro ao criar cliente." };
+//   }
+// });
+ipcMain.handle('add-cliente', async (_e, cliente) => {
+  const r = await http.post('/clients', cliente);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, message:'Cliente criado com sucesso!' };
 });
 
-ipcMain.handle("remove-client", async (event, clientId) => {
-  try {
-    // nao elimina se tiver taloes
-    const checkClientInReceipts = db.prepare("SELECT COUNT(*) AS count FROM receipts WHERE client_id = ?").get(clientId);
+//sqlite
+// ipcMain.handle("remove-client", async (event, clientId) => {
+//   try {
+//     // nao elimina se tiver taloes
+//     const checkClientInReceipts = db.prepare("SELECT COUNT(*) AS count FROM receipts WHERE client_id = ?").get(clientId);
     
-    if (checkClientInReceipts.count > 0) {
-      return { success: false, message: "Cliente possui talões associados." };
-    }
+//     if (checkClientInReceipts.count > 0) {
+//       return { success: false, message: "Cliente possui talões associados." };
+//     }
 
-    // Remove o cliente da tabela de clientes
-    const removeClientQuery = db.prepare("DELETE FROM clients WHERE id = ?");
-    const result = removeClientQuery.run(clientId);
+//     // Remove o cliente da tabela de clientes
+//     const removeClientQuery = db.prepare("DELETE FROM clients WHERE id = ?");
+//     const result = removeClientQuery.run(clientId);
 
-    // Verifica se a exclusão foi bem-sucedida
-    if (result.changes > 0) {
-      return { success: true, message: "Cliente excluído com sucesso!" };
-    } else {
-      return { success: false, message: "Cliente não encontrado." };
-    }
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+//     // Verifica se a exclusão foi bem-sucedida
+//     if (result.changes > 0) {
+//       return { success: true, message: "Cliente excluído com sucesso!" };
+//     } else {
+//       return { success: false, message: "Cliente não encontrado." };
+//     }
+//   } catch (error) {
+//     return { success: false, message: error.message };
+//   }
+// });
+ipcMain.handle('remove-client', async (_e, id) => {
+  const r = await http.del(`/clients/${id}`);
+  console.log(r);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, message:'Cliente excluído com sucesso!' };
 });
 
-ipcMain.handle("edit-client", async (event, client) => {
-  if (!client.name || !client.number || !client.address) {
-    return { success: false, message: "Por favor, preencha todos os campos." };
-  }
+//sqlite
+// ipcMain.handle("edit-client", async (event, client) => {
+//   if (!client.name || !client.number || !client.address) {
+//     return { success: false, message: "Por favor, preencha todos os campos." };
+//   }
 
-  const { id, name, number, address } = client;
+//   const { id, name, number, address } = client;
 
-  try {
-    const query = `
-      UPDATE clients
-      SET name = ?, number = ?, address = ?
-      WHERE id = ?
-    `;
-    const result =db.prepare(query).run(name, number, address, id); // Passando os dados para o UPDATE
+//   try {
+//     const query = `
+//       UPDATE clients
+//       SET name = ?, number = ?, address = ?
+//       WHERE id = ?
+//     `;
+//     const result =db.prepare(query).run(name, number, address, id); // Passando os dados para o UPDATE
     
-    if (result.changes > 0) {
-      return { success: true, message: "Cliente atualizado com sucesso!" };
-    } else {
-      return { success: false, message: "Cliente não encontrado." };
-    }
-  } catch (error) {
-    console.error("Erro ao editar cliente:", error);
+//     if (result.changes > 0) {
+//       return { success: true, message: "Cliente atualizado com sucesso!" };
+//     } else {
+//       return { success: false, message: "Cliente não encontrado." };
+//     }
+//   } catch (error) {
+//     console.error("Erro ao editar cliente:", error);
 
-    if (error.message.includes("Número de telefone já existe")) {
-      return { success: false, message: "Número de telefone já existe!" };
-    }
+//     if (error.message.includes("Número de telefone já existe")) {
+//       return { success: false, message: "Número de telefone já existe!" };
+//     }
 
-    return { success: false, message: "Ocorreu um erro inesperado." };
-  }
+//     return { success: false, message: "Ocorreu um erro inesperado." };
+//   }
+// });
+ipcMain.handle('edit-client', async (_e, client) => {
+  const r = await http.put(`/clients/${client.id}`, client);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, message:'Cliente atualizado com sucesso!' };
 });
 
-ipcMain.handle("get-next-receipt-id", () => {
-  try {
-    const row = db.prepare(`
-      SELECT COALESCE(seq, 0) + 1 AS next_id
-      FROM sqlite_sequence
-      WHERE name = 'receipts'
-    `).get();
+//sqlite
+// ipcMain.handle("get-next-receipt-id", () => {
+//   try {
+//     const row = db.prepare(`
+//       SELECT COALESCE(seq, 0) + 1 AS next_id
+//       FROM sqlite_sequence
+//       WHERE name = 'receipts'
+//     `).get();
 
-    return { success: true, nextId: row.next_id };
-  } catch (error) {
-    console.error("Erro ao obter próximo id:", error);
-    return { success: false, message: "Erro ao obter próximo número do talão" };
-  }
+//     return { success: true, nextId: row.next_id };
+//   } catch (error) {
+//     console.error("Erro ao obter próximo id:", error);
+//     return { success: false, message: "Erro ao obter próximo número do talão" };
+//   }
+// });
+//todo - first - confirmar que esta a dar update depois de meter o receipt a salvar para a nova bd
+ipcMain.handle('get-next-receipt-id', async () => {
+  const r = await http.get('/receipts/next-id');
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, nextId:r.data.nextId };
 });
 
 //operações de peças
-ipcMain.handle("get-refs", () => {
-  try {
-    const rows = db.prepare("SELECT * FROM products").all();
-    return {
-      success: true,
-      data: rows
-    };
-  } catch (error) {
-    console.error("Erro ao procurar referências:", error);
-    return {
-      success: false,
-      message: error.message
-    };
-  }
+//sqlite
+// ipcMain.handle("get-refs", () => {
+//   try {
+//     const rows = db.prepare("SELECT * FROM products").all();
+//     return {
+//       success: true,
+//       data: rows
+//     };
+//   } catch (error) {
+//     console.error("Erro ao procurar referências:", error);
+//     return {
+//       success: false,
+//       message: error.message
+//     };
+//   }
+// });
+ipcMain.handle('get-refs', async () => {
+  const r = await http.get('/products');
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, data:r.data };
 });
 
-ipcMain.handle("get-produtos-ref", (event, searchTerm) => {
-  try {
-    const query = `
-      SELECT 
-        ref,
-        type,
-        color,
-        style,
-        description,
-        price
-      FROM products
-      WHERE ref LIKE ?;
-    `;
+//sqlite
+// ipcMain.handle("get-produtos-ref", (event, searchTerm) => {
+//   try {
+//     const query = `
+//       SELECT 
+//         ref,
+//         type,
+//         color,
+//         style,
+//         description,
+//         price
+//       FROM products
+//       WHERE ref LIKE ?;
+//     `;
 
-    const result = db.prepare(query).all(`${searchTerm}%`);
+//     const result = db.prepare(query).all(`${searchTerm}%`);
 
-    if (result.length === 0) {
-      return { success: false, message: "Nenhuma peça encontrada com essa referência." };
-    }
+//     if (result.length === 0) {
+//       return { success: false, message: "Nenhuma peça encontrada com essa referência." };
+//     }
 
-    return { success: true, data: result };
-  } catch (error) {
-    return { success: false, message: "Erro interno ao procurar produtos por referência." };
-  }
+//     return { success: true, data: result };
+//   } catch (error) {
+//     return { success: false, message: "Erro interno ao procurar produtos por referência." };
+//   }
+// });
+ipcMain.handle('get-produtos-ref', async (_e, term) => {
+  const r = await http.get(`/products?ref=${encodeURIComponent(term)}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, data:r.data };
 });
 
-
+//todo - last - later
 ipcMain.handle("get-produtos-description", (event, searchTerm) => {
   try {
     console.log(searchTerm);
@@ -642,244 +715,338 @@ ipcMain.handle("get-produtos-description", (event, searchTerm) => {
     return { success: false, message: "Erro interno ao procurar produtos por nome." };
   }
 });
+//pgsql
+// ipcMain.handle('get-produtos-description', async (_e, term) => {
+//   const r = await http.get(`/products?q=${encodeURIComponent(term)}`);
+//   if (!r.success) return { success:false, message:r.message || 'Nenhuma peça encontrada com esse nome.' };
+//   return { success:true, data:r.data };
+// });
 
+//sqlite
+// ipcMain.handle("remove-ref", async (event, productRef) => {
+//   try {
+//     // Remove a peça da tabela de produtos
+//     const removeProductQuery = db.prepare("DELETE FROM products WHERE ref = ?");
+//     const result = removeProductQuery.run(productRef);
 
-ipcMain.handle("remove-ref", async (event, productRef) => {
-  try {
-    // Remove a peça da tabela de produtos
-    const removeProductQuery = db.prepare("DELETE FROM products WHERE ref = ?");
-    const result = removeProductQuery.run(productRef);
-
-    // Verifica se a exclusão foi bem-sucedida
-    if (result.changes > 0) {
-      return { success: true, message: "Peça excluída com sucesso!" };
-    } else {
-      return { success: false, message: "Peça não encontrada." };
-    }
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+//     // Verifica se a exclusão foi bem-sucedida
+//     if (result.changes > 0) {
+//       return { success: true, message: "Peça excluída com sucesso!" };
+//     } else {
+//       return { success: false, message: "Peça não encontrada." };
+//     }
+//   } catch (error) {
+//     return { success: false, message: error.message };
+//   }
+// });
+ipcMain.handle('remove-ref', async (_e, ref) => {
+  const r = await http.del(`/products/${encodeURIComponent(ref)}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, message:'Peça excluída com sucesso!' };
 });
 
-ipcMain.handle("add-ref", (event, product) => {
-  // Verifica se todos os campos necessários foram preenchidos
-  if (!product.prodRef || !product.type || !product.color || !product.description || !product.price) {
-    return { success: false, message: "Por favor, preencha todos os campos." };
-  }
+//sqlite
+// ipcMain.handle("add-ref", (event, product) => {
+//   // Verifica se todos os campos necessários foram preenchidos
+//   if (!product.prodRef || !product.type || !product.color || !product.description || !product.price) {
+//     return { success: false, message: "Por favor, preencha todos os campos." };
+//   }
 
+//   const floatPrice = Number(product.price);
+//   if (isNaN(floatPrice) || floatPrice <= 0) {
+//     return { success: false, message: "O valor fornecido não é válido." };
+//   }
+
+//   try {
+//     // Verifica se já existe uma peça com a mesma referência
+//     const checkExistingRef = db.prepare("SELECT COUNT(*) AS count FROM products WHERE ref = ?").get(product.prodRef);
+
+//     if (checkExistingRef.count > 0) {
+//       return { success: false, message: "Já existe uma peça com esta referência." };
+//     }
+
+//     const normalizedDescription = product.description
+//       .normalize("NFD")
+//       .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // remove acentos
+
+//     // Prepara a instrução SQL para inserir a peça
+//     const stmt = db.prepare("INSERT INTO products (ref, type, color, style, description, price, description_normalized) VALUES (?, ?, ?, ?, ?, ?, ?)");
+//     stmt.run(product.prodRef, product.type, product.color, product.style || "", product.description, floatPrice, normalizedDescription);
+
+//     return { success: true, message: "Peça criada com sucesso!" };
+//   } catch (error) {
+//     console.error("Erro ao adicionar peça:", error);
+//     return { success: false, message: "Erro ao criar peça." };
+//   }
+// });
+ipcMain.handle('add-ref', async (_e, product) => {
   const floatPrice = Number(product.price);
   if (isNaN(floatPrice) || floatPrice <= 0) {
     return { success: false, message: "O valor fornecido não é válido." };
   }
 
-  try {
-    // Verifica se já existe uma peça com a mesma referência
-    const checkExistingRef = db.prepare("SELECT COUNT(*) AS count FROM products WHERE ref = ?").get(product.prodRef);
-
-    if (checkExistingRef.count > 0) {
-      return { success: false, message: "Já existe uma peça com esta referência." };
-    }
-
-    const normalizedDescription = product.description
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // remove acentos
-
-    // Prepara a instrução SQL para inserir a peça
-    const stmt = db.prepare("INSERT INTO products (ref, type, color, style, description, price, description_normalized) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    stmt.run(product.prodRef, product.type, product.color, product.style || "", product.description, floatPrice, normalizedDescription);
-
-    return { success: true, message: "Peça criada com sucesso!" };
-  } catch (error) {
-    console.error("Erro ao adicionar peça:", error);
-    return { success: false, message: "Erro ao criar peça." };
-  }
+  const payload = {
+    ref: product.prodRef,
+    type: product.type,
+    color: product.color,
+    style: product.style ?? '',
+    description: product.description,
+    price: product.price
+  };
+  const r = await http.post('/products', payload);
+  console.log(r);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, message:'Peça criada com sucesso!' };
 });
 
-ipcMain.handle("edit-ref", (event, product) => {
-  const { prodRef, type, color, style, description, price, oldProdRef } = product;
+//sqlite
+// ipcMain.handle("edit-ref", (event, product) => {
+//   const { prodRef, type, color, style, description, price, oldProdRef } = product;
 
-  // Verifica se todos os campos necessários foram preenchidos
-  if (!product.prodRef || !product.type || !product.color || !product.description || !product.price) {
-    return { success: false, message: "Por favor, preencha todos os campos." };
-  }
+//   // Verifica se todos os campos necessários foram preenchidos
+//   if (!product.prodRef || !product.type || !product.color || !product.description || !product.price) {
+//     return { success: false, message: "Por favor, preencha todos os campos." };
+//   }
 
-  // Converte o preço para número real
+//   // Converte o preço para número real
+//   const floatPrice = Number(product.price);
+//   if (isNaN(floatPrice) || floatPrice <= 0) {
+//     return { success: false, message: "O preço fornecido não é válido." };
+//   }
+
+//   try {
+//     // Se a ref foi alterada, verificamos se a nova ref já existe na base de dados
+//     if (product.prodRef !== product.oldProdRef) {
+//       const refCheck = db.prepare("SELECT COUNT(*) AS count FROM products WHERE ref = ?").get(prodRef);
+//       if (refCheck.count > 0) {
+//         return { success: false, message: "Já existe uma peça com a nova referência." };
+//       }
+//     }
+    
+//     const normalizedDescription = product.description
+//       .normalize("NFD")
+//       .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // remove acentos
+
+//     // Prepara a instrução SQL para atualizar os dados da peça
+//     const stmt = db.prepare(`
+//       UPDATE products
+//       SET ref = ?, type = ?, color = ?, style = ?, description = ?, price = ?, description_normalized = ?
+//       WHERE ref = ?
+//     `);
+
+//     // Executa a atualização na base de dados
+//     const result = stmt.run(prodRef, type, color, style || "", description, floatPrice, normalizedDescription, oldProdRef);
+
+//     // Verifica se a atualização foi bem-sucedida
+//     if (result.changes > 0) {
+//       return { success: true, message: "Peça editada com sucesso!" };
+//     } else {
+//       return { success: false, message: "Peça não encontrada." };
+//     }
+//   } catch (error) {
+//     console.error("Erro ao editar peça:", error);
+//     return { success: false, message: "Erro ao editar peça." };
+//   }
+// });
+ipcMain.handle('edit-ref', async (_e, product) => {
   const floatPrice = Number(product.price);
   if (isNaN(floatPrice) || floatPrice <= 0) {
-    return { success: false, message: "O preço fornecido não é válido." };
+    return { success: false, message: "O valor fornecido não é válido." };
   }
 
-  try {
-    // Se a ref foi alterada, verificamos se a nova ref já existe na base de dados
-    if (product.prodRef !== product.oldProdRef) {
-      const refCheck = db.prepare("SELECT COUNT(*) AS count FROM products WHERE ref = ?").get(prodRef);
-      if (refCheck.count > 0) {
-        return { success: false, message: "Já existe uma peça com a nova referência." };
-      }
-    }
-    
-    const normalizedDescription = product.description
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // remove acentos
-
-    // Prepara a instrução SQL para atualizar os dados da peça
-    const stmt = db.prepare(`
-      UPDATE products
-      SET ref = ?, type = ?, color = ?, style = ?, description = ?, price = ?, description_normalized = ?
-      WHERE ref = ?
-    `);
-
-    // Executa a atualização na base de dados
-    const result = stmt.run(prodRef, type, color, style || "", description, floatPrice, normalizedDescription, oldProdRef);
-
-    // Verifica se a atualização foi bem-sucedida
-    if (result.changes > 0) {
-      return { success: true, message: "Peça editada com sucesso!" };
-    } else {
-      return { success: false, message: "Peça não encontrada." };
-    }
-  } catch (error) {
-    console.error("Erro ao editar peça:", error);
-    return { success: false, message: "Erro ao editar peça." };
-  }
+  const payload = {
+    ref: product.prodRef,
+    type: product.type,
+    color: product.color,
+    style: product.style ?? '',
+    description: product.description,
+    price: product.price,
+    // opcional: version se já estiveres a usar locking
+    ...(product.version ? { version: product.version } : {})
+  };
+  const r = await http.put(`/products/${encodeURIComponent(product.oldProdRef)}`, payload);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, message:'Peça editada com sucesso!' };
 });
-
 
 //operacoes taloes
-ipcMain.handle("get-receipt-by-id", (event, receiptId) => {
-  try {
-    const query = `
-      SELECT r.*, c.name
-      FROM receipts r
-      INNER JOIN clients c ON r.client_id = c.id
-      WHERE r.id = ?
-    `;
-    const receipt = db.prepare(query).get(receiptId);
+//sqlite
+// ipcMain.handle("get-receipt-by-id", (event, receiptId) => {
+//   try {
+//     const query = `
+//       SELECT r.*, c.name
+//       FROM receipts r
+//       INNER JOIN clients c ON r.client_id = c.id
+//       WHERE r.id = ?
+//     `;
+//     const receipt = db.prepare(query).get(receiptId);
 
-    if (receipt) {
-      return { success: true, receipt };
-    } else {
-      return { success: false, message: "Talão não existe." };
-    }
-  } catch (error) {
-    console.error("Erro ao procurar talão pelo ID:", error);
-    return { success: false, message: "Erro ao procurar talão pelo ID." };
-  }
+//     if (receipt) {
+//       return { success: true, receipt };
+//     } else {
+//       return { success: false, message: "Talão não existe." };
+//     }
+//   } catch (error) {
+//     console.error("Erro ao procurar talão pelo ID:", error);
+//     return { success: false, message: "Erro ao procurar talão pelo ID." };
+//   }
+// });
+ipcMain.handle('get-receipt-by-id', async (_e, id) => {
+  const r = await http.get(`/receipts/${id}`);
+  console.log(r);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, receipt:r.data.receipt };
 });
 
-ipcMain.handle("get-receipts-by-client", (event, clientId) => {
-  try {
-    const query = `
-      SELECT r.*, c.name
-      FROM receipts r
-      INNER JOIN clients c ON r.client_id = c.id
-      WHERE r.client_id = ?
-    `;
-    const receipts = db.prepare(query).all(clientId);
+//sqlite
+// ipcMain.handle("get-receipts-by-client", (event, clientId) => {
+//   try {
+//     const query = `
+//       SELECT r.*, c.name
+//       FROM receipts r
+//       INNER JOIN clients c ON r.client_id = c.id
+//       WHERE r.client_id = ?
+//     `;
+//     const receipts = db.prepare(query).all(clientId);
 
-    if (receipts.length > 0) {
-      return { success: true, receipts };
-    } else {
-      return { success: false, message: "Nenhum talão encontrado para este cliente." };
-    }
-  } catch (error) {
-    console.error("Erro ao procurar talões pelo ID do cliente:", error);
-    return { success: false, message: "Erro ao procurar talões pelo ID do cliente." };
-  }
+//     if (receipts.length > 0) {
+//       return { success: true, receipts };
+//     } else {
+//       return { success: false, message: "Nenhum talão encontrado para este cliente." };
+//     }
+//   } catch (error) {
+//     console.error("Erro ao procurar talões pelo ID do cliente:", error);
+//     return { success: false, message: "Erro ao procurar talões pelo ID do cliente." };
+//   }
+// });
+ipcMain.handle('get-receipts-by-client', async (_e, clientId) => {
+  const r = await http.get(`/clients/${clientId}/receipts`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, receipts:r.data.receipts };
 });
 
-ipcMain.handle("get-receipts-by-number", (event, clientNumber) => {
-  try {
-    const query = `
-      SELECT r.*, c.name, c.number AS client_number
-      FROM receipts r
-      INNER JOIN clients c ON r.client_id = c.id
-      WHERE c.number = ?
-    `;
-    const receipts = db.prepare(query).all(clientNumber);
+//sqlite
+// ipcMain.handle("get-receipts-by-number", (event, clientNumber) => {
+//   try {
+//     const query = `
+//       SELECT r.*, c.name, c.number AS client_number
+//       FROM receipts r
+//       INNER JOIN clients c ON r.client_id = c.id
+//       WHERE c.number = ?
+//     `;
+//     const receipts = db.prepare(query).all(clientNumber);
 
-    if (receipts.length > 0) {
-      return { success: true, receipts };
-    } else {
-      return { success: false, message: "Nenhum talão encontrado para este número." };
-    }
-  } catch (error) {
-    console.error("Erro ao procurar talões pelo número do cliente:", error);
-    return { success: false, message: "Erro ao procurar talões pelo número do cliente." };
-  }
+//     if (receipts.length > 0) {
+//       return { success: true, receipts };
+//     } else {
+//       return { success: false, message: "Nenhum talão encontrado para este número." };
+//     }
+//   } catch (error) {
+//     console.error("Erro ao procurar talões pelo número do cliente:", error);
+//     return { success: false, message: "Erro ao procurar talões pelo número do cliente." };
+//   }
+// });
+ipcMain.handle('get-receipts-by-number', async (_e, number) => {
+  const r = await http.get(`/receipts/by-number?number=${encodeURIComponent(number)}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, receipts:r.data.receipts };
 });
 
-ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
-  try {
-    if(startDate > endDate) {
-      return { success: false, message: "Intervalo de datas inválido." };
-    }
+//sqlite
+// ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
+//   try {
+//     if(startDate > endDate) {
+//       return { success: false, message: "Intervalo de datas inválido." };
+//     }
 
-    const formattedStartDate = startDate + " 00:00:00"; // Data de início com hora inicial
-    const formattedEndDate = endDate + " 23:59:59";   // Data de fim com hora final
+//     const formattedStartDate = startDate + " 00:00:00"; // Data de início com hora inicial
+//     const formattedEndDate = endDate + " 23:59:59";   // Data de fim com hora final
 
-    const query = `
-      SELECT r.*, c.name 
-      FROM receipts r
-      INNER JOIN clients c ON r.client_id = c.id
-      WHERE created_at BETWEEN ? AND ?
-    `;
-    const receipts = db.prepare(query).all(formattedStartDate, formattedEndDate);
+//     const query = `
+//       SELECT r.*, c.name 
+//       FROM receipts r
+//       INNER JOIN clients c ON r.client_id = c.id
+//       WHERE created_at BETWEEN ? AND ?
+//     `;
+//     const receipts = db.prepare(query).all(formattedStartDate, formattedEndDate);
 
-    if (receipts.length > 0) {
-      return { success: true, receipts };
-    } else {
-      return { success: false, message: "Nenhum talão encontrado neste intervalo." };
-    }
-  } catch (error) {
-    console.error("Erro ao procurar talões por intervalo de datas:", error);
-    return { success: false, message: "Erro ao procurar talões por intervalo de datas." };
-  }
+//     if (receipts.length > 0) {
+//       return { success: true, receipts };
+//     } else {
+//       return { success: false, message: "Nenhum talão encontrado neste intervalo." };
+//     }
+//   } catch (error) {
+//     console.error("Erro ao procurar talões por intervalo de datas:", error);
+//     return { success: false, message: "Erro ao procurar talões por intervalo de datas." };
+//   }
+// });
+ipcMain.handle('get-receipts-by-date', async (_e, startDate, endDate) => {
+  const r = await http.get(`/receipts/by-date?startDate=${startDate}&endDate=${endDate}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, receipts:r.data };
 });
 
-ipcMain.handle("edit-receipt", (event, updatedFields) => {
+//sqlite
+// ipcMain.handle("edit-receipt", (event, updatedFields) => {
 
-  // Verifica se todos os campos necessários foram preenchidos
-  if ((!updatedFields.total_price && updatedFields.total_price !== 0) || !updatedFields.products_list || !updatedFields.state || !updatedFields.id) {
-    return { success: false, message: "Por favor, preencha todos os campos." };
-  }    
+//   // Verifica se todos os campos necessários foram preenchidos
+//   if ((!updatedFields.total_price && updatedFields.total_price !== 0) || !updatedFields.products_list || !updatedFields.state || !updatedFields.id) {
+//     return { success: false, message: "Por favor, preencha todos os campos." };
+//   }    
   
-  try {
+//   try {
 
-    const stmt = db.prepare(`
-      UPDATE receipts
-      SET total_price = ?, products_list = ?, state = ?
-      WHERE id = ?
-    `);
+//     const stmt = db.prepare(`
+//       UPDATE receipts
+//       SET total_price = ?, products_list = ?, state = ?
+//       WHERE id = ?
+//     `);
 
-    const result = stmt.run(updatedFields.total_price, updatedFields.products_list, updatedFields.state, updatedFields.id);
+//     const result = stmt.run(updatedFields.total_price, updatedFields.products_list, updatedFields.state, updatedFields.id);
 
-    // Verifica se a atualização foi bem-sucedida
-    if (result.changes > 0) {
-      return { success: true, message: "Talão editado com sucesso!" };
-    } else {
-      return { success: false, message: "Erro ao editar talão." };
-    }
-  } catch (error) {
-    console.error("Erro ao editar talão:", error);
-    return { success: false, message: "Erro ao editar talão." };
-  }
+//     // Verifica se a atualização foi bem-sucedida
+//     if (result.changes > 0) {
+//       return { success: true, message: "Talão editado com sucesso!" };
+//     } else {
+//       return { success: false, message: "Erro ao editar talão." };
+//     }
+//   } catch (error) {
+//     console.error("Erro ao editar talão:", error);
+//     return { success: false, message: "Erro ao editar talão." };
+//   }
+// });
+// edit-receipt
+ipcMain.handle('edit-receipt', async (_e, fields) => {
+  const payload = {
+    total_price: fields.total_price,
+    products_list: fields.products_list, // já é JSON no app antigo
+    state: fields.state
+  };
+  const r = await http.put(`/receipts/${fields.id}`, payload);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, message:'Talão editado com sucesso!' };
 });
 
-ipcMain.handle("remove-receipt", async (event, receiptId) => {
-  try {
-    const query = db.prepare("DELETE FROM receipts WHERE id = ?");
-    const result = query.run(receiptId);
+//sql
+// ipcMain.handle("remove-receipt", async (event, receiptId) => {
+//   try {
+//     const query = db.prepare("DELETE FROM receipts WHERE id = ?");
+//     const result = query.run(receiptId);
 
-    // Verifica se a exclusão foi bem-sucedida
-    if (result.changes > 0) {
-      return { success: true, message: "Talão excluído com sucesso!" };
-    } else {
-      return { success: false, message: "Talão não encontrado." };
-    }
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+//     // Verifica se a exclusão foi bem-sucedida
+//     if (result.changes > 0) {
+//       return { success: true, message: "Talão excluído com sucesso!" };
+//     } else {
+//       return { success: false, message: "Talão não encontrado." };
+//     }
+//   } catch (error) {
+//     return { success: false, message: error.message };
+//   }
+// });
+ipcMain.handle('remove-receipt', async (_e, id) => {
+  const r = await http.del(`/receipts/${id}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, message:'Talão excluído com sucesso!' };
 });
 
 

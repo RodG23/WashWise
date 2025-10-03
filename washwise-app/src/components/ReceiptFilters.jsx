@@ -73,6 +73,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
         .then((response) => {
           if(response.success) {
             const receipt = response.receipt;
+            console.log(receipt);
             setReceiptDate(receipt);
             updateFilteredReceipts([receipt]);
             onReceiptSelect(receipt);
@@ -160,10 +161,12 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
   };
 
   const setReceiptDate = (receipt) => {
-    const [datePart, hourPart] = receipt.created_at.split(" "); // separa a data da hora
+    const [datePart, timePartWithMs] = receipt.created_at.split("T");
+    const [timePart] = timePartWithMs.split("."); // remove .000Z
     const [year, month, day] = datePart.split("-");
+
     receipt.table_date = `${day}-${month}-${year}`;
-    receipt.table_hour = hourPart;
+    receipt.table_hour = timePart;
   }
 
   // Definir a data inicial e final para hoje

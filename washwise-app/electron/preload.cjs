@@ -1,8 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
+//todo - last - backup
 
 contextBridge.exposeInMainWorld("api", {
     addCliente: (cliente) => ipcRenderer.invoke("add-cliente", cliente),
-    backupDb: () => ipcRenderer.invoke("backup-db"),
+    //backupDb: () => ipcRenderer.invoke("backup-db"),
     saveReceipt: (receipt) => ipcRenderer.invoke("save-receipt", receipt),
     printReceipt: (receipt) => ipcRenderer.invoke("print-receipt", receipt),
     saveAndPrintReceipt: (receipt) => ipcRenderer.invoke("save-print-receipt", receipt),
@@ -14,7 +15,7 @@ contextBridge.exposeInMainWorld("api", {
     editClient: (client) => ipcRenderer.invoke("edit-client", client),
     getRefs: () => ipcRenderer.invoke("get-refs"),
     getProdutosRef: (searchTerm) => ipcRenderer.invoke("get-produtos-ref", searchTerm),
-    getProdutosDescription: (searchTerm) => ipcRenderer.invoke("get-produtos-description", searchTerm),
+    //getProdutosDescription: (searchTerm) => ipcRenderer.invoke("get-produtos-description", searchTerm),
     removeRef: (productRef) => ipcRenderer.invoke("remove-ref", productRef),
     addRef: (product) => ipcRenderer.invoke("add-ref", product),
     editRef: (product) => ipcRenderer.invoke("edit-ref", product),
