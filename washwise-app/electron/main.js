@@ -82,7 +82,7 @@ function createWindow() {
     mainWindow.loadFile(path.join(app.getAppPath(), '../renderer', 'index.html'));
   }
 
-  mainWindow.webContents.openDevTools();
+  //mainWindow.webContents.openDevTools();
 
   // Quando estiver pronto, mostra e fecha o splash
   mainWindow.webContents.on("did-finish-load", () => {
