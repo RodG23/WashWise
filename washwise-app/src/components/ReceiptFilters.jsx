@@ -112,7 +112,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
       window.api.getReceiptsByNumber(debouncedTerm)
         .then((response) => {
           if (response.success) {
-            const receipts = response.receipts.reverse();
+            const receipts = response.receipts;
             receipts.forEach(setReceiptDate);
             setReceiptsAllStates(receipts);
             handleStates(receipts);
@@ -139,7 +139,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
       window.api.getReceiptsByDate(startDate, endDate) 
         .then((response) => {
           if(response.success) {
-            const receipts = response.receipts.reverse();
+            const receipts = response.receipts;
             receipts.forEach(setReceiptDate);
             setReceiptsAllStates(receipts);
             handleStates(receipts);
@@ -228,7 +228,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
     window.api.getReceiptsByClient(cli.id)
       .then((response) => {
         if(response.success) {
-          const receipts = response.receipts.reverse();
+          const receipts = response.receipts;
           receipts.forEach(setReceiptDate);
           setReceiptsAllStates(receipts);
           handleStates(receipts);

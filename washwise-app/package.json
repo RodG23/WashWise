@@ -1,7 +1,7 @@
 {
   "name": "washwise-app",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.3",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -19,6 +19,7 @@
     "@tailwindcss/vite": "^4.0.1",
     "axios": "^1.7.9",
     "better-sqlite3": "^11.8.1",
+    "node-fetch": "^3.3.2",
     "node-thermal-printer": "^4.4.4",
     "puppeteer": "^24.3.1",
     "react": "^18.3.1",
@@ -49,8 +50,7 @@
     "productName": "WashWise",
     "files": [
       "dist/**/*",
-      "electron/**/*",
-      "washwise.db"
+      "electron/**/*"
     ],
     "directories": {
       "output": "release"
@@ -65,7 +65,11 @@
       },
       {
         "from": "assets",
-        "to":"renderer"
+        "to": "renderer"
+      },
+      {
+        "from": "certs",
+        "to": "renderer/certs"
       }
     ],
     "win": {

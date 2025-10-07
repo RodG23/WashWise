@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { app } from "electron";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+//const __dirname = path.dirname(__filename);
 
 // Caminho para a base de dados no diretório do Electron
 const userDataPath = app.getPath("userData");
