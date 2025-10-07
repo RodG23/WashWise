@@ -1,18 +1,15 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
-import db from "./database.js";
+//import db from "./database.js";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 import { screen } from "electron";
 import fs from 'fs';
-import Database from "better-sqlite3";
+//import Database from "better-sqlite3";
 import { http } from './http.js';
 
-//todo - last - tirr imports que ja nao use
-//todo - last - tirar a db do package no build
-//todo - last - ver o retorno da api e da bd para nao enviar dados para a app quando a app nao os vai usar pe criar cliente
-//todo - last - organizar os codigos de erro
-
+//todo - last - backup
+//todo - first - verificar se o tls ficou bem com wireshark
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,23 +115,23 @@ if (!gotLock) {
     if (process.platform !== "darwin") app.quit();
   });
 }
-
-async function backupDatabase() {
-  try {
-    const table_date = new Date().toLocaleDateString('pt-PT').replaceAll("/","-");
-    const sourceDb = new Database(dbPath, { readonly: true });
-    //const desktopPath = app.getPath('desktop');
-    const backupPath = path.join("F:\\", `backup-${table_date}.db`);
+//sqlite
+// async function backupDatabase() {
+//   try {
+//     const table_date = new Date().toLocaleDateString('pt-PT').replaceAll("/","-");
+//     const sourceDb = new Database(dbPath, { readonly: true });
+//     //const desktopPath = app.getPath('desktop');
+//     const backupPath = path.join("F:\\", `backup-${table_date}.db`);
     
-    await sourceDb.backup(backupPath); // espera o backup terminar
-    sourceDb.close();
+//     await sourceDb.backup(backupPath); // espera o backup terminar
+//     sourceDb.close();
 
-    return { success: true, path: backupPath };
-  } catch (err) {
-    console.error('Erro durante o backup:', err);
-    return { success: false, message: err.message };
-  }
-}
+//     return { success: true, path: backupPath };
+//   } catch (err) {
+//     console.error('Erro durante o backup:', err);
+//     return { success: false, message: err.message };
+//   }
+// }
 
 // async function add_column() {
 //   try {
@@ -478,15 +475,25 @@ ipcMain.handle('get-clientes-search-number', async (_e, term) => {
 
 
 //operações de taloes
+//sqlite
+// ipcMain.handle("backup-db", async () => {
+//   return await backupDatabase();
+// });
 ipcMain.handle("backup-db", async () => {
-  return await backupDatabase();
+  try {
+    const r = await http.post("/admin/backup");
+    if (!r.success) return { success: false, message: r.message };
+    return { success: true, path: r.data.path };
+  } catch (err) {
+    console.error("Erro ao fazer backup:", err);
+    return { success: false, message: "Falha ao contactar o servidor para backup." };
+  }
 });
 
 ipcMain.handle("save-receipt", async (event, receipt) => {
   return saveReceipt(receipt);
 });
 
-//todo - first - testar save print quando app estiver construida
 ipcMain.handle("save-print-receipt", async (event, receipt) => {
   const saveResult = await saveReceipt(receipt);
   const table_date = new Date().toLocaleDateString('pt-PT');
@@ -555,7 +562,6 @@ ipcMain.handle('add-cliente', async (_e, cliente) => {
 // });
 ipcMain.handle('remove-client', async (_e, id) => {
   const r = await http.del(`/clients/${id}`);
-  console.log(r);
   if (!r.success) return { success:false, message:r.message };
   return { success:true, message:'Cliente excluído com sucesso!' };
 });
@@ -612,7 +618,6 @@ ipcMain.handle('edit-client', async (_e, client) => {
 //     return { success: false, message: "Erro ao obter próximo número do talão" };
 //   }
 // });
-//todo - first - confirmar que esta a dar update depois de meter o receipt a salvar para a nova bd
 ipcMain.handle('get-next-receipt-id', async () => {
   const r = await http.get('/receipts/next-id');
   if (!r.success) return { success:false, message:r.message };
@@ -674,53 +679,52 @@ ipcMain.handle('get-produtos-ref', async (_e, term) => {
   return { success:true, data:r.data };
 });
 
-//todo - last - later
-ipcMain.handle("get-produtos-description", (event, searchTerm) => {
-  try {
-    console.log(searchTerm);
-    const searchTermStr = String(searchTerm).normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "").replace(/[-_]/g, " ").toLowerCase(); // pesquisa case-insensitive
+//sql
+// ipcMain.handle("get-produtos-description", (event, searchTerm) => {
+//   try {
+//     console.log(searchTerm);
+//     const searchTermStr = String(searchTerm).normalize("NFD")
+//       .replace(/[\u0300-\u036f]/g, "").replace(/[-_]/g, " ").toLowerCase(); // pesquisa case-insensitive
 
-    console.log(searchTermStr);
+//     console.log(searchTermStr);
 
-    const tokens = searchTermStr
-      .split(/\s+/)
-      .filter(t => t.length > 0)
-      .map(t => t + "*")
-      .join(" AND ");
+//     const tokens = searchTermStr
+//       .split(/\s+/)
+//       .filter(t => t.length > 0)
+//       .map(t => t + "*")
+//       .join(" AND ");
 
-      console.log(tokens);
+//       console.log(tokens);
 
-    const query = `
-      SELECT 
-        p.ref, 
-        p.type, 
-        p.color, 
-        p.style, 
-        p.description, 
-        p.price
-      FROM products p
-      JOIN products_fts fts ON p.rowid = fts.rowid
-      WHERE fts.description_normalized MATCH '${tokens}';
-    `;
+//     const query = `
+//       SELECT 
+//         p.ref, 
+//         p.type, 
+//         p.color, 
+//         p.style, 
+//         p.description, 
+//         p.price
+//       FROM products p
+//       JOIN products_fts fts ON p.rowid = fts.rowid
+//       WHERE fts.description_normalized MATCH '${tokens}';
+//     `;
 
-    const result = db.prepare(query).all();
+//     const result = db.prepare(query).all();
 
-    if (result.length === 0) {
-      return { success: false, message: "Nenhuma peça encontrado com esse nome." };
-    }
+//     if (result.length === 0) {
+//       return { success: false, message: "Nenhuma peça encontrado com esse nome." };
+//     }
 
-    return { success: true, data: result };
-  } catch (error) {
-    return { success: false, message: "Erro interno ao procurar produtos por nome." };
-  }
-});
-//pgsql
-// ipcMain.handle('get-produtos-description', async (_e, term) => {
-//   const r = await http.get(`/products?q=${encodeURIComponent(term)}`);
-//   if (!r.success) return { success:false, message:r.message || 'Nenhuma peça encontrada com esse nome.' };
-//   return { success:true, data:r.data };
+//     return { success: true, data: result };
+//   } catch (error) {
+//     return { success: false, message: "Erro interno ao procurar produtos por nome." };
+//   }
 // });
+ipcMain.handle('get-produtos-description', async (_e, term) => {
+  const r = await http.get(`/products?q=${encodeURIComponent(term)}`);
+  if (!r.success) return { success:false, message:r.message || 'Nenhuma peça encontrada com esse nome.' };
+  return { success:true, data:r.data };
+});
 
 //sqlite
 // ipcMain.handle("remove-ref", async (event, productRef) => {
@@ -785,16 +789,20 @@ ipcMain.handle('add-ref', async (_e, product) => {
     return { success: false, message: "O valor fornecido não é válido." };
   }
 
+  const normalizedDescription = product.description
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").toLowerCase(); // remove acentos
+
   const payload = {
     ref: product.prodRef,
     type: product.type,
     color: product.color,
     style: product.style ?? '',
     description: product.description,
+    description_normalized:normalizedDescription,
     price: product.price
   };
   const r = await http.post('/products', payload);
-  console.log(r);
   if (!r.success) return { success:false, message:r.message };
   return { success:true, message:'Peça criada com sucesso!' };
 });
@@ -854,14 +862,18 @@ ipcMain.handle('edit-ref', async (_e, product) => {
     return { success: false, message: "O valor fornecido não é válido." };
   }
 
+  const normalizedDescription = product.description
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const payload = {
     ref: product.prodRef,
     type: product.type,
     color: product.color,
     style: product.style ?? '',
     description: product.description,
+    description_normalized:normalizedDescription,
     price: product.price,
-    // opcional: version se já estiveres a usar locking
     ...(product.version ? { version: product.version } : {})
   };
   const r = await http.put(`/products/${encodeURIComponent(product.oldProdRef)}`, payload);
