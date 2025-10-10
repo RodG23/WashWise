@@ -173,11 +173,13 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
   };
 
   const handleSave = () => {
+    const version = selectedReceiptEdit?.version;
     const updatedFields = {
       id: selectedReceiptEdit.id,
       total_price: value,
       products_list: JSON.stringify(productsState),
       state: editingState,
+      version
     };
     window.api.editReceipt(updatedFields)
       .then(response => {
@@ -191,6 +193,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
                     total_price: value,
                     products_list: JSON.stringify(productsState),
                     state: editingState,
+                    version: version + 1
                   }
                 : receipt
             )

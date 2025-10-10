@@ -26,3 +26,5 @@ contextBridge.exposeInMainWorld("api", {
     editReceipt: (updatedFields) => ipcRenderer.invoke("edit-receipt", updatedFields),
     removeReceipt: (receiptId) => ipcRenderer.invoke("remove-receipt", receiptId),
   });
+
+  //todo o problema dos receipts, quando apago o ultimo o numero nao fica certo

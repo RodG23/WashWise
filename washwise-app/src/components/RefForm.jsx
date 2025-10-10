@@ -47,8 +47,9 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
   }, [selectedRefEdit]);
 
   const handleSave = () => {
+    const version = selectedRefEdit?.version;
     const description = `${type} ${color} ${style ? style : ''}`.trim()
-    const refData = { prodRef, type, color, style, description, price, oldProdRef };
+    const refData = { prodRef, type, color, style, description, price, oldProdRef, version };
 
     if (isEditing) {
       window.api.editRef(refData)
@@ -66,6 +67,7 @@ const RefForm = ({ selectedRefEdit, isEditing, handleNewRef, updateFilteredRefs,
                   style, 
                   description, 
                   price,
+                  version: version + 1,
                   ref: prodRef
                 };
 
