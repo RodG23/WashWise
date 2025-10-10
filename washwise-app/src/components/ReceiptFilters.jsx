@@ -73,7 +73,6 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
         .then((response) => {
           if(response.success) {
             const receipt = response.receipt;
-            console.log(receipt);
             setReceiptDate(receipt);
             updateFilteredReceipts([receipt]);
             onReceiptSelect(receipt);

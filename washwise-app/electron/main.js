@@ -8,9 +8,6 @@ import fs from 'fs';
 //import Database from "better-sqlite3";
 import { http } from './http.js';
 
-//todo - last - backup
-//todo - first - verificar se o tls ficou bem com wireshark
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const userDataPath = app.getPath("userData");
@@ -1032,7 +1029,8 @@ ipcMain.handle('edit-receipt', async (_e, fields) => {
   const payload = {
     total_price: fields.total_price,
     products_list: fields.products_list, // já é JSON no app antigo
-    state: fields.state
+    state: fields.state,
+    version: fields.version
   };
   const r = await http.put(`/receipts/${fields.id}`, payload);
   if (!r.success) return { success:false, message:r.message };

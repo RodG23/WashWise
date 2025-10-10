@@ -40,7 +40,8 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
   }, [selectedClientEdit]);
 
   const handleSave = () => {
-    const clientData = { id, name, number, address };
+    const version = selectedClientEdit?.version;
+    const clientData = { id, name, number, address, version };
     if (isEditing) {
       window.api.editClient(clientData)
         .then(response => {
@@ -48,7 +49,7 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
             toast.success(response.message ,{
               toastId: "edit-client-success",
             });
-            updateFilteredClients(prevClients => prevClients.map(client => client.id === id ? { ...client, name, number, address } : client));
+            updateFilteredClients(prevClients => prevClients.map(client => client.id === id ? { ...client, name, number, address, version: version + 1}   : client));
             handleNewClient(); // Limpa os dados do cliente após a edição
           } else {
             toast.warn(response.message, {

@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import {app} from "electron";
 import path from 'path';
 
-const API_URL = 'https://localhost:5050'; //todo mudar no fim
+const API_URL = 'https://192.168.1.72:5050'; //todo mudar no fim
 
 const agent = new https.Agent({
   cert: fs.readFileSync(path.join(app.getAppPath(), '../renderer', 'certs/client.crt.pem')),
