@@ -5,8 +5,9 @@ import { fileURLToPath } from "url";
 import { ThermalPrinter, PrinterTypes, CharacterSet, BreakLine } from 'node-thermal-printer';
 import { screen } from "electron";
 import fs from 'fs';
+import fsp from "fs/promises";
 //import Database from "better-sqlite3";
-import { http } from './http.js';
+import { http, getApiState, onApiStateChange } from './http.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -321,6 +322,13 @@ async function printReceipt(receipt) {
     printer.bold(false);
     printer.println(receipt.date);
     printer.newLine();
+    printer.newLine();
+
+    printer.alignCenter();
+    printer.underline(true);
+    printer.println("Os artigos devem ser levantados no prazo máximo de 3 meses. Decorrido este período, não assumimos qualquer responsabilidade pela sua guarda.");
+    printer.underline(false);
+    printer.alignLeft();
   
     printer.cut();
 
@@ -387,6 +395,13 @@ async function printNumber(id, name, state) {
   }
 } 
 
+//devolve o estado atual
+ipcMain.handle('api-state', () => ({ state: getApiState() }));
+
+//subscreve mudanças de estado do Availability e broadcast para todas as janelas via canal 'api-state'.
+onApiStateChange((s) => {
+    BrowserWindow.getAllWindows().forEach(w => w.webContents.send('api-state', s));
+});
 
 //operações de clientes
 //sqlite
@@ -480,6 +495,28 @@ ipcMain.handle("backup-db", async () => {
   try {
     const r = await http.post("/admin/backup");
     if (!r.success) return { success: false, message: r.message };
+
+    const backupPath = r.data.path;
+    const destDir = "F:\\washwise\\backups";
+    const userDataBackups = path.join(userDataPath, "backups");
+    const fileName = path.basename(backupPath); // extrai só o nome
+    const localBackupPath = path.join(userDataBackups, fileName);
+
+    try {
+      // Garante que a pasta na pen existe
+      await fsp.mkdir(destDir, { recursive: true });
+
+      const destPath = path.join(destDir, fileName);
+
+      // Copia o ficheiro para a pen
+      await fsp.copyFile(localBackupPath, destPath);
+
+      console.log(`Backup copiado para: ${destPath}`);
+    } catch (copyErr) {
+      console.error("Falha ao copiar backup para a pen:", copyErr);
+      return { success: false, message: "Backup realizado, mas impossível guardar em destino pretendido!" }
+    }
+
     return { success: true, path: r.data.path };
   } catch (err) {
     console.error("Erro ao fazer backup:", err);
@@ -499,7 +536,10 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
 });
 
 ipcMain.handle("print-receipt", async (event, receipt) => {
-  return printReceipt({...receipt, receipt_id: receipt.id, client_name: receipt.name, products: JSON.parse(receipt.products_list)});
+  const products = typeof receipt.products_list === "string"
+    ? JSON.parse(receipt.products_list)
+    : receipt.products_list;
+  return printReceipt({...receipt, receipt_id: receipt.id, client_name: receipt.name, products});
 });
 
 ipcMain.handle("print-number", async (event, id, name, state) => {

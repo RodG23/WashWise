@@ -3,7 +3,7 @@ import { IoIosClose } from "react-icons/io";
 import { TbIroningSteamFilled } from "react-icons/tb";
 
 
-const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, saveTrigger}) => {
+const DynamicTable = ({ items, onDelete, onNoteChange, onQuantityChangeTable, activeTab, setItems, saveTrigger}) => {
   const numberOfItemsToRender = 8;
 
   const itemsWithEmptyRows = [
@@ -14,6 +14,9 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, save
   // Estado local das notas (por índice)
   const [localNotes, setLocalNotes] = useState([]);
   const [nextItem, setNextItem] = useState(0);
+
+  //Estado local para quantidades (por índice)
+  const [localQuantities, setLocalQuantities] = useState([]);
 
   useEffect(() => {
     window.api.getNextReceiptId()
@@ -40,12 +43,21 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, save
   // Sempre que os items mudarem, atualiza o estado local
   useEffect(() => {
     setLocalNotes(items.map((item) => item.note || ""));
+    setLocalQuantities(items.map((item) => (item?.quantity ?? "1").toString()));
   }, [items]);
 
   const handleLocalNoteChange = (index, value) => {
     setLocalNotes((prev) => {
       const updated = [...prev];
       updated[index] = value;
+      return updated;
+    });
+  };
+
+  const handleLocalQuantityChange = (index, value) => {
+    setLocalQuantities((prev) => {
+      const updated = [...prev];
+      updated[index] = value; // mantém como string
       return updated;
     });
   };
@@ -62,6 +74,15 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, save
   const handleBlur = (index, value) => {
     onNoteChange(index, value); // só aqui atualiza o pai
   };
+
+  const handleQuantityBlur = (index, value) => {
+    const n = parseInt(value || "1", 10);
+    const q = String(Math.max(1, Number.isNaN(n) ? 1 : n));
+    handleLocalQuantityChange(index, q);
+    onQuantityChangeTable(index, q);
+  };
+
+  const blockAllKeys = (e) => { e.preventDefault(); };
 
   return (
     <div className="overflow-auto rounded-2xl h-[90%] w-[85%] flex text-3xl scrollbar-hidden">
@@ -84,7 +105,18 @@ const DynamicTable = ({ items, onDelete, onNoteChange, activeTab, setItems, save
           {itemsWithEmptyRows.map((item, index) => (
             <tr key={index}>
               <td className="p-2 text-3xl text-center font-semibold border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%] cursor-default">
-                {item?.quantity || ""}
+                {item ? (
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    className="w-20 text-center border-none outline-none bg-transparent cursor-default"
+                    value={localQuantities[index] ?? "1"}
+                    onChange={(e) => handleLocalQuantityChange(index, e.target.value)}
+                    onBlur={(e) => handleQuantityBlur(index, e.target.value)}
+                    onKeyDown={blockAllKeys}
+                  />
+                ) : null}
               </td>
               <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
                 {item?.description || ""}

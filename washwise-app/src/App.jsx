@@ -31,6 +31,10 @@ import { LuLetterText } from "react-icons/lu";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+
+import ApiStatusBanner from './components/ApiStatusBanner';
+
+
 function App() {
   //aba novo talao
   const [activeTab, setActiveTab] = useState("talão"); //Estado da Tab
@@ -94,7 +98,7 @@ function App() {
           toastId: "backup-bd-success",
         });
       } else {
-        toast.warn("Erro ao guardar Base de Dados", {
+        toast.warn(response.message, {
           position: "top-right",
           autoClose: 3000,
           className: "custom-warn-toast",
@@ -134,6 +138,14 @@ function App() {
       const updatedItems = [...prevItems];
       updatedItems[index] = { ...updatedItems[index], note };
       return updatedItems;
+    });
+  };
+
+  const setQuantityTable = (index, quantity) => {
+    setItems((prevItems) => {
+      const updated = [...prevItems];
+      updated[index] = { ...updated[index], quantity };
+      return updated;
     });
   };
   
@@ -237,6 +249,8 @@ function App() {
   
   //app
   return (
+    <div>
+      <ApiStatusBanner />
     <div className="bg-gray-50 w-screen h-screen">
       <div className="h-screen flex flex-col bg-[#E1E4F1]">
         <div className="h-[8%] flex bg-[#E1E4F1] text-2xl">
@@ -317,7 +331,7 @@ function App() {
               </div>
             </div>
             <div className="col-span-2 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
-              <DynamicTable items={items} onDelete={deleteItem} onNoteChange={getNote} activeTab={activeTab} setItems={setItems} saveTrigger={saveTrigger}/>
+              <DynamicTable items={items} onDelete={deleteItem} onNoteChange={getNote} onQuantityChangeTable={setQuantityTable} activeTab={activeTab} setItems={setItems} saveTrigger={saveTrigger}/>
             </div>
             <div className="row-span-2 col-start-3 row-start-2 bg-[#E1E4F1] flex items-center justify-center">
               <CheckboxSelector saveTrigger={saveTrigger} onCheckboxChange={getCheckbox}/>
@@ -362,7 +376,7 @@ function App() {
       </div>
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
-
+  </div>          
 
     
   );

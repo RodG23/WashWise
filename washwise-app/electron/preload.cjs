@@ -25,6 +25,11 @@ contextBridge.exposeInMainWorld("api", {
     getReceiptsByNumber: (clientNumber) => ipcRenderer.invoke("get-receipts-by-number", clientNumber),
     editReceipt: (updatedFields) => ipcRenderer.invoke("edit-receipt", updatedFields),
     removeReceipt: (receiptId) => ipcRenderer.invoke("remove-receipt", receiptId),
+    getApiState: () => ipcRenderer.invoke('api-state'), // { state: 'UP' | 'DOWN' }
+    onApiStateChange: (callback) => {
+      const handler = (_evt, state) => callback(state);
+      ipcRenderer.on('api-state', handler);
+      // devolve unsubscribe para conveniência
+      return () => ipcRenderer.removeListener('api-state', handler);
+    }
   });
-
-  //todo o problema dos receipts, quando apago o ultimo o numero nao fica certo

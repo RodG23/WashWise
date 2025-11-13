@@ -136,7 +136,18 @@ const ReceiptTable = ({ filteredReceipts, updateFilteredReceipts, selectedReceip
               <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
                 {receipt?.name || ""}
               </td>
-              <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
+              <td
+                className={`p-2 text-center text-2xl border-b-2 border-r-2 border-[#B8B8B8] cursor-default 
+                  ${
+                    receipt?.state === "Pendente"
+                      ? "bg-yellow-100"
+                      : receipt?.state === "Pago"
+                      ? "bg-blue-100"
+                      : receipt?.state === "Entregue"
+                      ? "bg-green-300"
+                      : "bg-[#FFFFFF]"
+                  }`}
+              >
                 {receipt?.state || ""}
               </td>
               <td className="p-2 text-center text-2xl bg-[#FFFFFF] border-b-2 border-r-2 border-[#B8B8B8] cursor-default">
