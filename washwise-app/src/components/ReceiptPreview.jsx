@@ -232,13 +232,13 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
       </div>
       <div className="col-span-2 row-span-2 grid grid-cols-2 grid-rows-3 leading-tight">
         <div className= "pl-4 row-span-2 flex-col">
-          <p className="font-bold text-lg">Lavandaria 3 Marias</p>
-          <p className="">Av. 25 de Abril, 241</p>
-          <p className="">4830-512 Póvoa de Lanhoso</p>
-          <p className="">Tlf: 253 634 051</p>
+          <p className="font-bold text-lg">Engomadoria 3 Marias</p>
+          <p className="">Rua Maria da Fonte, 116</p>
+          <p className="">4830-548 Póvoa de Lanhoso</p>
+          <p className="">Tlm: 925 352 281</p>
         </div>
         <div className= "col-start-2 flex justify-end items-start pr-4 text-xl gap-1">
-          <p className="font-bold">Nº:</p>
+          <p className="font-bold">Nº: E -</p>
           {selectedReceiptEdit?.id || "[.....]"}
         </div>
         <div className= "col-start-2 flex flex-col items-end pr-4 leading-tight">
