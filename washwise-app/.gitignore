@@ -11,6 +11,7 @@ node_modules
 package-lock.json
 dist
 build
+certs
 release
 dist-ssr
 *.local

@@ -202,8 +202,8 @@ async function printReceipt(receipt) {
     printer.setTypeFontB();
     printer.setTextSize(1,1);
 
-    const textLeft = "Lavandaria 3 Marias";
-    const textRight = `Nº: ${receipt.receipt_id}`;    
+    const textLeft = "Engomadoria 3 Marias";
+    const textRight = `Nº: E-${receipt.receipt_id}`;    
     const spacesCount = 32 - textLeft.length - textRight.length;
     const spaces = spacesCount > 0 ? ' '.repeat(spacesCount) : '';
     
@@ -214,13 +214,13 @@ async function printReceipt(receipt) {
     printer.setTextNormal();
     //printer.bold(false);
     // Mantém negrito para morada e telefone
-    printer.println("Av. 25 de Abril, 241");
+    printer.println("Rua Maria da Fonte, 116");
 
     // ID na segunda linha, alinhado à direita
-    printer.leftRight("4830-512 Póvoa de Lanhoso", receipt.table_date);
+    printer.leftRight("4830-548 Póvoa de Lanhoso", receipt.table_date);
 
     // Data na linha do telefone, alinhado à direita
-    printer.println("Tlf: 253 634 051");
+    printer.println("Tlm: 925 352 281");
     
     printer.newLine();
     printer.newLine();
@@ -351,7 +351,7 @@ async function printNumber(id, name, state) {
   
     printer.alignCenter();
     printer.setTextSize(7,7);
-    printer.println(id);
+    printer.println(`E-${id}`);
     printer.newLine();
     printer.setTextSize(1,1);
     if (state === "Pago") {
