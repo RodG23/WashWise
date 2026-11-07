@@ -2,7 +2,7 @@ import React from "react";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const SaveButton = ({ onSave, client, items, checkbox }) => {
+const SaveButton = ({ onSave, client, items, checkbox, checkboxDate }) => {
   
   const handleSave = async () => {
     if (!client.id) {
@@ -35,16 +35,16 @@ const SaveButton = ({ onSave, client, items, checkbox }) => {
             });
       return;
     }
-    var check = checkbox;
-    if (checkbox == "Sº") {
-      check = "Sab"
-    }
+    var check = checkbox.replace("Sº", "Sab");
     const receipt = {
       client_id: client.id,
       products: items,
       state: "Pendente",
       total_price: items.reduce((total, item) => total + item.price * item.quantity, 0),
-      date: check
+      date: check,
+      //só vem preenchida quando o dia foi escolhido no calendário; nos dias da
+      //semana é o main.js que a calcula, que é quem sabe o dia de hoje
+      delivery_date: checkboxDate || null
     };
 
     const response = await window.api.saveReceipt(receipt);

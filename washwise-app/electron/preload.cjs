@@ -6,9 +6,10 @@ contextBridge.exposeInMainWorld("api", {
     saveReceipt: (receipt) => ipcRenderer.invoke("save-receipt", receipt),
     printReceipt: (receipt) => ipcRenderer.invoke("print-receipt", receipt),
     saveAndPrintReceipt: (receipt) => ipcRenderer.invoke("save-print-receipt", receipt),
-    printNumber: (id, name, state) => ipcRenderer.invoke("print-number", id, name, state),
+    printNumber: (id, name, state, noReceipt) => ipcRenderer.invoke("print-number", id, name, state, noReceipt),
+    printCustom: (number, text, copies) => ipcRenderer.invoke("print-custom", number, text, copies),
     getClientesSearchName: (searchTerm) => ipcRenderer.invoke("get-clientes-search-name", searchTerm),
-    getClientesSearchReceipt: (searchTerm) => ipcRenderer.invoke("get-clientes-search-receipt", searchTerm),
+    getClientesSearchReceipt: (searchTerm, year) => ipcRenderer.invoke("get-clientes-search-receipt", searchTerm, year),
     getClientesSearchNumber: (searchTerm) => ipcRenderer.invoke("get-clientes-search-number", searchTerm),
     removeClient: (clientId) => ipcRenderer.invoke("remove-client", clientId),
     editClient: (client) => ipcRenderer.invoke("edit-client", client),
@@ -20,11 +21,15 @@ contextBridge.exposeInMainWorld("api", {
     editRef: (product) => ipcRenderer.invoke("edit-ref", product),
     getNextReceiptId: () => ipcRenderer.invoke("get-next-receipt-id"),
     getReceiptById: (receiptId) => ipcRenderer.invoke("get-receipt-by-id", receiptId),
+    getReceiptByYearNumber: (number, year) => ipcRenderer.invoke("get-receipt-by-year-number", number, year),
+    getReceiptYears: () => ipcRenderer.invoke("get-receipt-years"),
     getReceiptsByDate: (startDate, endDate) => ipcRenderer.invoke("get-receipts-by-date", startDate, endDate),
+    getReceiptsByDeliveryDate: (date) => ipcRenderer.invoke("get-receipts-by-delivery-date", date),
     getReceiptsByClient: (clientId) => ipcRenderer.invoke("get-receipts-by-client", clientId),
     getReceiptsByNumber: (clientNumber) => ipcRenderer.invoke("get-receipts-by-number", clientNumber),
     editReceipt: (updatedFields) => ipcRenderer.invoke("edit-receipt", updatedFields),
     removeReceipt: (receiptId) => ipcRenderer.invoke("remove-receipt", receiptId),
+    setReceiptMarked: (receiptId, marked) => ipcRenderer.invoke("set-receipt-marked", receiptId, marked),
     getApiState: () => ipcRenderer.invoke('api-state'), // { state: 'UP' | 'DOWN' }
     onApiStateChange: (callback) => {
       const handler = (_evt, state) => callback(state);

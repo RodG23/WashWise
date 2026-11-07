@@ -3,11 +3,34 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import {app} from "electron";
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { Availability } from './availability.js';
 
 
+//em dev (app não empacotada) usa o servidor local e os certs do repo; em produção mantém o servidor da lavandaria
+const isDev = !app.isPackaged;
+
+const DEFAULT_API_URL = isDev ? 'https://127.0.0.1:5050' : 'https://192.168.1.207:5050';
+
+//Override opcional: ficheiro server.json na pasta de dados da app.
+//Usado no posto-servidor para apontar ao loopback e funcionar sem rede:
+//  %APPDATA%\washwise-app\server.json -> {"api_url":"https://127.0.0.1:5050"}
+function readApiUrlOverride() {
+  try {
+    const p = path.join(app.getPath('userData'), 'server.json');
+    const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
+    if (cfg && typeof cfg.api_url === 'string' && cfg.api_url.startsWith('https://')) {
+      console.log('server.json encontrado: a usar', cfg.api_url);
+      return cfg.api_url.replace(/\/$/, '');
+    }
+  } catch {
+    //sem ficheiro ou inválido -> usa o default
+  }
+  return null;
+}
+
 const CFG = {
-  API_URL: 'https://192.168.1.207:5050',
+  API_URL: readApiUrlOverride() || DEFAULT_API_URL,
   HEALTH_INTERVAL_MS: 8000,
   HEALTH_TIMEOUT_MS: 2500,
   FAIL_THRESHOLD: 2,
@@ -15,10 +38,14 @@ const CFG = {
   HEALTH_PATH: '/health'
 };
 
+const CERT_DIR = isDev
+  ? path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'certs')
+  : path.join(app.getAppPath(), '../renderer', 'certs');
+
 const agent = new https.Agent({
-  cert: fs.readFileSync(path.join(app.getAppPath(), '../renderer', 'certs/client.crt.pem')),
-  key:  fs.readFileSync(path.join(app.getAppPath(), '../renderer', 'certs/client.key.pem')),
-  ca:   fs.readFileSync(path.join(app.getAppPath(), '../renderer', 'certs/ca.crt.pem')),
+  cert: fs.readFileSync(path.join(CERT_DIR, 'client.crt.pem')),
+  key:  fs.readFileSync(path.join(CERT_DIR, 'client.key.pem')),
+  ca:   fs.readFileSync(path.join(CERT_DIR, 'ca.crt.pem')),
   rejectUnauthorized: true,
 });
 
@@ -88,5 +115,6 @@ export const http = {
   get: (p)     => request(p),
   post: (p, b) => request(p, { method:'POST', body:b }),
   put:  (p, b) => request(p, { method:'PUT',  body:b }),
+  patch:(p, b) => request(p, { method:'PATCH',body:b }),
   del:  (p)    => request(p, { method:'DELETE' }),
 };

@@ -25,7 +25,8 @@ import { LuUsersRound } from "react-icons/lu";
 import { TfiReceipt } from "react-icons/tfi";
 import { LuBookType } from 'react-icons/lu';
 import { GiClothesline } from "react-icons/gi";
-import { FaCloudDownloadAlt } from "react-icons/fa";
+import { FaCloudDownloadAlt, FaPhoneAlt } from "react-icons/fa";
+import CustomPrintModal from "./components/CustomPrintModal";
 import { IoBarcodeSharp } from "react-icons/io5";
 import { LuLetterText } from "react-icons/lu";
 import { ToastContainer, toast } from 'react-toastify';
@@ -42,11 +43,14 @@ function App() {
   const [ref, setRef] = useState(""); //Estado referencia peça
   const [quantity, setQuantity] = useState("1"); //Estado quantidade peça
   const [checkbox, setCheckbox] = useState(""); //Estado dia levantamento
+  const [checkboxDate, setCheckboxDate] = useState(null); //Data real de entrega, só quando vem do calendário
   const [items, setItems] = useState([]); //Estado itens talão
   const [clearInputTrigger, setClearInputTrigger] = useState(1); //Atualizando limpa input
   const [saveTrigger, setSaveTrigger] = useState(1); //Atualizando limpa input
   const [refSearchType, setRefSearchType] = useState("ref");
+  const [clientSearchType, setClientSearchType] = useState("name"); //Modo de pesquisa de cliente (nome/telefone)
   const refSearchRef = useRef(null); //Ref para input de peça
+  const clientSearchRef = useRef(null); //Ref para input de cliente
   const quantityInputRef = useRef(null); //Ref para quantidade de peça
 
   //aba clientes
@@ -60,9 +64,12 @@ function App() {
   //aba talões
   const [filteredReceipts, setFilteredReceipts] = useState([]); // Estado para armazenar os talões filtrados
   const [selectedReceiptEdit, setSelectedReceiptEdit] = useState(null); // Estado para guardar o talão selecionado para editar
+  const refreshReceiptsRef = useRef(null); // Ponte para o refresh: preenchida pelo ReceiptFilters, chamada pelo ReceiptTable
+  const applyReceiptChangeRef = useRef(null); // Mesma ponte, para as alterações chegarem à lista de onde os filtros partem
 
   //app geral
   const lastActiveTab = useRef(activeTab);
+  const [showPrintModal, setShowPrintModal] = useState(false); //sobreposição de impressão livre
 
 
   const tabs = [
@@ -77,6 +84,7 @@ function App() {
     if (previousTab === "talão" && activeTab !== "talão") {
       // Saiu da aba Novo Talão
       setRefSearchType("ref");
+      setClientSearchType("name");
     } else if (previousTab === "clientes" && activeTab !== "clientes") {
       // Saiu da aba Clientes
       setFilteredClients([]);
@@ -128,9 +136,12 @@ function App() {
     setClient(newClient);
   }
 
-  //atualiza dia levant
-  const getCheckbox = (newCheckbox) => {
+  //atualiza dia levant. O 2º argumento só vem preenchido quando o dia foi
+  //escolhido no calendário ("Outro"); nos dias da semana é null e quem calcula
+  //a data de entrega é o main.js.
+  const getCheckbox = (newCheckbox, newDate = null) => {
     setCheckbox(newCheckbox);
+    setCheckboxDate(newDate);
   }
 
   const getNote = (index, note) => {
@@ -175,6 +186,7 @@ function App() {
     setCheckbox("");
     setItems([]);
     setRefSearchType("ref");
+    setClientSearchType("name");
   }
 
   //retira item talao
@@ -233,8 +245,28 @@ function App() {
     setFilteredReceipts(receipts);
   };
 
+  // Alterar um talão que já está na tabela (marcar, apagar, guardar edições).
+  // Existem duas listas: a que se vê e a `receiptsAllStates` do ReceiptFilters, de
+  // onde os filtros de Estado e Marcação partem. Escrever só na primeira fazia com
+  // que mexer num filtro reconstruísse a tabela a partir da lista antiga e
+  // desfizesse a alteração no ecrã. O mesmo updater vai por isso às duas.
+  // Não se reaplicam os filtros aqui de propósito: com "Não marcado" ligado, o
+  // talão que se acabou de marcar sairia da lista debaixo do dedo de quem está a
+  // marcar vários seguidos. Sai no próximo filtro ou no refresh.
+  const applyReceiptChange = (updater) => {
+    setFilteredReceipts(updater);
+    applyReceiptChangeRef.current?.(updater);
+  };
+
   const handleNewReceipt = () => {
   setSelectedReceiptEdit(null); // Limpa o talão selecionado, indo para o estado de "Novo Talão" - neste caso não se vai criar, mas tem comportamento análogo, deixa de estar um talão selecionado
+  };
+
+  // Refresh da tabela: fecha o painel de detalhe (para não ficar com dados antigos)
+  // e manda o ReceiptFilters repetir a pesquisa que está feita.
+  const refreshReceipts = () => {
+    handleNewReceipt();
+    return refreshReceiptsRef.current?.();
   };
 
   const handleReceiptSelectForEdit = (receiptSelected) => {
@@ -286,10 +318,34 @@ function App() {
           <>
             <div className="h-full grid grid-cols-3 grid-rows-5">
             <div className="row-start-1 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
-              <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
-                <p>Cliente:</p>
+              <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip justify-between items-end">
+                <div className="flex flex-row items-end">
+                  <p>Cliente:</p>
+                  <LuLetterText
+                    onClick={() => {
+                      setClientSearchType("name");
+                      clientSearchRef.current?.focus();
+                    }}
+                    className={`size-8 ml-5 cursor-pointer ${clientSearchType === "name" ? "text-[#31418f]" : "opacity-50"}`}
+                    />
+                  <FaPhoneAlt
+                    onClick={() => {
+                      setClientSearchType("phone");
+                      clientSearchRef.current?.focus();
+                    }}
+                    className={`size-6 ml-3 mb-1 cursor-pointer ${clientSearchType === "phone" ? "text-[#31418f]" : "opacity-50"}`}
+                    />
+                </div>
+                {/* Avisa quem está ao balcão de que este cliente não leva talão.
+                    Encostada à direita, à largura da caixa de pesquisa por baixo.
+                    Só aparece depois de o cliente estar escolhido. */}
+                {client?.no_receipt && (
+                  <span className="px-3 py-0.5 mb-1 rounded-2xl bg-[#E0DAD1] border-2 border-[#928787] text-xl whitespace-nowrap">
+                    Sem Talão
+                  </span>
+                )}
               </div>
-              <ClientSearch saveTrigger={saveTrigger} onClientChange={getClient} refSearchRef={refSearchRef}/>
+              <ClientSearch saveTrigger={saveTrigger} onClientChange={getClient} refSearchRef={refSearchRef} ref={clientSearchRef} searchType={clientSearchType} noReceipt={!!client?.no_receipt}/>
             </div>
             <div className="grid grid-cols-2 justify-start items-center col-span-2 row-start-1 bg-[#E1E4F1]">
               <div className="h-full ml-1 flex-col flex justify-center">
@@ -323,7 +379,7 @@ function App() {
                 </div>
                 <div className="flex justify-between h-full items-center mt-5">
                   <AddButton onClick={addItem}/>
-                  <FaCloudDownloadAlt 
+                  <FaCloudDownloadAlt
                     className="size-12 opacity-55 cursor-pointer hover:opacity-100 mr-12 transition duration-200 active:scale-90"
                     onClick={backupDatabase}
                     />
@@ -337,10 +393,10 @@ function App() {
               <CheckboxSelector saveTrigger={saveTrigger} onCheckboxChange={getCheckbox}/>
             </div>
             <div className="col-start-3 row-start-4 bg-[#E1E4F1] flex justify-center items-center">
-              <SaveButton onSave={saveReceipt} client={client} items={items} checkbox={checkbox}/>
+              <SaveButton onSave={saveReceipt} client={client} items={items} checkbox={checkbox} checkboxDate={checkboxDate}/>
             </div>
             <div className="col-start-3 row-start-5 bg-[#E1E4F1] flex justify-center items-start">
-              <SavePrintButton onSave={saveReceipt} client={client} items={items} checkbox={checkbox}/>
+              <SavePrintButton onSave={saveReceipt} client={client} items={items} checkbox={checkbox} checkboxDate={checkboxDate}/>
             </div>
           </div>
           </>}
@@ -348,13 +404,13 @@ function App() {
           <>
             <div className="h-full grid grid-cols-6 grid-rows-5">
               <div className="row-start-1 col-span-6 bg-[#E1E4F1] flex justify-center items-center flex-col w-full">
-                <ReceiptFilters updateFilteredReceipts={updateFilteredReceipts} onReceiptSelect={handleReceiptSelectForEdit}/>
+                <ReceiptFilters updateFilteredReceipts={updateFilteredReceipts} onReceiptSelect={handleReceiptSelectForEdit} onCustomPrint={() => setShowPrintModal(true)} registerRefresh={refreshReceiptsRef} registerApplyChange={applyReceiptChangeRef}/>
               </div>
               <div className="col-span-4 row-span-4 row-start-2 col-start-1 bg-[#E1E4F1] flex items-center justify-center">
-                <ReceiptTable filteredReceipts={filteredReceipts} updateFilteredReceipts={updateFilteredReceipts} selectedReceiptId={selectedReceiptEdit?.id} onReceiptSelect={handleReceiptSelectForEdit}/>
+                <ReceiptTable filteredReceipts={filteredReceipts} applyReceiptChange={applyReceiptChange} selectedReceiptId={selectedReceiptEdit?.id} onReceiptSelect={handleReceiptSelectForEdit} onRefresh={refreshReceipts}/>
               </div>
               <div className="col-span-2 col-start-5 row-span-4 row-start-2 bg-[#E1E4F1] flex items-center justify-start">
-                <ReceiptPreview selectedReceiptEdit={selectedReceiptEdit} isEditing={selectedReceiptEdit !== null} handleNewReceipt={handleNewReceipt} updateFilteredReceipts={updateFilteredReceipts} activeTab={activeTab}/>
+                <ReceiptPreview selectedReceiptEdit={selectedReceiptEdit} isEditing={selectedReceiptEdit !== null} handleNewReceipt={handleNewReceipt} applyReceiptChange={applyReceiptChange} activeTab={activeTab}/>
               </div>
           </div>
           </>}
@@ -374,9 +430,10 @@ function App() {
           </>}
         </div>
       </div>
+      <CustomPrintModal open={showPrintModal} onClose={() => setShowPrintModal(false)} />
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
-  </div>          
+  </div>
 
     
   );

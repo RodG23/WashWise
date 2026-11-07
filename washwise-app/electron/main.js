@@ -14,6 +14,8 @@ const __dirname = path.dirname(__filename);
 const userDataPath = app.getPath("userData");
 const dbPath = path.join(userDataPath, "washwise.db");
 const isDev = !app.isPackaged;
+//DevTools + janela redimensionavel so em dev e so com WW_DEVTOOLS=1 (para testar resolucoes)
+const devTools = isDev && !!process.env.WW_DEVTOOLS;
 let mainWindow;
 
 function createWindow() {
@@ -58,9 +60,9 @@ function createWindow() {
     x: 0,
     y: 0,
     show: false,
-    resizable: false,
+    resizable: devTools,
     minimizable: true,
-    maximizable: false,
+    maximizable: devTools,
     autoHideMenuBar: true,
     icon: path.join(app.getAppPath(), '../renderer', 'ww_logo_t.png'),
     webPreferences: {
@@ -78,6 +80,7 @@ function createWindow() {
   }
 
   //mainWindow.webContents.openDevTools();
+  if (devTools) mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   // Quando estiver pronto, mostra e fecha o splash
   mainWindow.webContents.on("did-finish-load", () => {
@@ -173,17 +176,79 @@ if (!gotLock) {
 //     return { success: false, error: error.message };
 //   }
 // }
+// Dia de levantamento (texto) -> data real de entrega (AAAA-MM-DD).
+// Regra: a proxima ocorrencia do dia, SEMPRE no futuro. Um talao feito numa
+// quinta com "5ª" e para a quinta seguinte, nao para o proprio dia.
+// Devolve null para tudo o que nao seja um dia da semana ("15 Dias", "Outro",
+// datas escritas a mao) — um talao sem data de entrega e valido.
+const WEEKDAYS = { '2ª': 1, '3ª': 2, '4ª': 3, '5ª': 4, '6ª': 5, 'Sab': 6, 'Sº': 6 };
+
+function deliveryDateFor(dateText, base = new Date()) {
+  if (!dateText) return null;
+  // corta o modificador: "5ª (Sem falta)" -> "5ª"
+  const dia = String(dateText).split('(')[0].trim();
+  const alvo = WEEKDAYS[dia];
+  if (alvo === undefined) return null;
+
+  // 1..7 dias a frente; delta 0 (mesmo dia) vira 7 pela regra acima
+  const delta = ((alvo - base.getDay() + 6) % 7) + 1;
+
+  // meia-noite local + setDate(): somar dias assim e imune as mudancas de hora
+  // de marco e outubro, ao contrario de somar milissegundos
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  d.setDate(d.getDate() + delta);
+
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + mm + '-' + dd;
+}
+
+// Copia do textoLevantamento do src/utils/datas.js — o renderer e o main
+// correm em processos diferentes e nao partilham modulos. Mexer nos dois.
+const MESES_TALAO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const DIAS_TALAO = ['Dom', '2ª', '3ª', '4ª', '5ª', '6ª', 'Sab'];
+
+// "5ª" + 2026-05-15 -> "5ª (15 Mai)"; com modificador -> "5ª (15 Mai) - Sem falta".
+// O dia da semana vem sempre da data real, para o dia e a data nunca se
+// contradizerem; do texto gravado so se aproveita o modificador. Sem data real
+// (taloes antigos) fica o texto tal como foi gravado.
+function textoLevantamento(dateText, deliveryDate) {
+  const texto = dateText || '';
+  if (!deliveryDate) return texto;
+
+  // serve "2026-05-15" (calculada ca) e "2026-05-15T00:00:00.000Z" (da API)
+  const iso = String(deliveryDate).slice(0, 10);
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return texto;
+
+  // data construida em hora local: com new Date(texto) o dia da semana podia
+  // escorregar por causa do fuso
+  const dia = DIAS_TALAO[new Date(y, m - 1, d).getDay()];
+  const data = Number(d) + ' ' + MESES_TALAO[m - 1];
+
+  const partes = texto.split('(');
+  const modificador = partes.length > 1 ? partes[1].replace(')', '').trim() : '';
+
+  return dia + ' (' + data + ')' + (modificador ? ' - ' + modificador : '');
+}
+
 async function saveReceipt(receipt) {
   const payload = {
     client_id: receipt.client_id,
     products: receipt.products,
     state: receipt.state,
     total_price: receipt.total_price,
-    date: receipt.date
+    date: receipt.date,
+    // Do calendario vem ja pronta; do dia da semana e calculada aqui, no unico
+    // ponto por onde passam Guardar e Guardar+Imprimir, e em hora local do posto
+    // — nao no Postgres, que pode nao estar em Lisboa
+    delivery_date: receipt.delivery_date || deliveryDateFor(receipt.date)
   };
   const r = await http.post('/receipts', payload);
   if (!r.success) return { success:false, message:r.message };
-  return { success:true, receipt_id:r.data.receipt_id, client_id:r.data.client_id };
+  // a data vai de volta porque e aqui que ela e decidida nos dias da semana, e
+  // o talao impresso tem de mostrar a que ficou gravada — nao uma recalculada
+  return { success:true, receipt_id:r.data.receipt_id, client_id:r.data.client_id, year:r.data.year, number:r.data.number, delivery_date:payload.delivery_date };
 }
 
 async function printReceipt(receipt) {
@@ -320,7 +385,7 @@ async function printReceipt(receipt) {
     printer.bold(true);
     printer.print("Levantamento: ");
     printer.bold(false);
-    printer.println(receipt.date);
+    printer.println(textoLevantamento(receipt.date, receipt.delivery_date));
     printer.newLine();
     printer.newLine();
 
@@ -348,7 +413,20 @@ async function printReceipt(receipt) {
   }
 }
 
-async function printNumber(id, name, state) {
+// Clientes "Sem Talao": a etiqueta sai com o nome em grande e o numero pequeno
+// ao canto, em vez do numero em grande. O nome e propriedade do cliente, nao do
+// talao — mudar o tipo vale tambem para reimpressoes de taloes antigos.
+//
+// Larguras reais do papel (ESC/POS GS ! n, 48 caracteres a 1x):
+//   setTextSize(2,2) = 3x -> 16 caracteres por linha
+//   setTextSize(1,1) = 2x -> 24 caracteres por linha
+// A mediana dos nomes e 14, mas um quarto passa dos 16; por isso acima desse
+// limite desce-se um degrau em vez de partir o nome em quatro linhas. A palavra
+// mais comprida da base tem 15 letras, logo o BreakLine.WORD nunca corta uma
+// palavra ao meio.
+const NOME_LARGURA_3X = 16;
+
+async function printNumber(id, name, state, noReceipt = false) {
   try {
     const printer = new ThermalPrinter({
       type: PrinterTypes.EPSON, // 'star' or 'epson'
@@ -368,16 +446,35 @@ async function printNumber(id, name, state) {
 
     printer.println();
     printer.println();
-  
-    printer.alignCenter();
-    printer.setTextSize(7,7);
-    printer.println(id);
-    printer.newLine();
-    printer.setTextSize(1,1);
-    if (state === "Pago") {
-      printer.println(`${name} - Pago`);
+
+    // O texto e o mesmo nos dois formatos; so muda o que vai em grande
+    const texto = state === "Pago" ? `${name} - Pago` : name;
+
+    if (noReceipt) {
+      // Sem Talao: numero pequeno encostado a direita, nome em grande ao centro
+      printer.alignRight();
+      printer.setTextSize(1,1);
+      printer.println(String(id));
+      printer.setTextNormal();
+      printer.newLine();
+
+      printer.alignCenter();
+      // desce de 3x para 2x quando o nome nao cabe numa linha, em vez de o
+      // partir em varias linhas de letra grande
+      const escala = texto.length > NOME_LARGURA_3X ? 1 : 2;
+      printer.setTextSize(escala, escala);
+      printer.bold(true);
+      printer.println(texto.toUpperCase());
+      printer.bold(false);
+      printer.setTextNormal();
     } else {
-      printer.println(name);
+      // Formato de sempre: numero em grande, nome pequeno por baixo
+      printer.alignCenter();
+      printer.setTextSize(7,7);
+      printer.println(id);
+      printer.newLine();
+      printer.setTextSize(1,1);
+      printer.println(texto);
     }
     printer.cut();
 
@@ -394,6 +491,68 @@ async function printNumber(id, name, state) {
     return { success: false, error: error.message };
   }
 } 
+
+//impressão livre: número opcional no topo à direita + texto em grande
+//copies: nº de vias; o ciclo fica aqui para todas irem num só execute()
+async function printCustom(number, text, copies = 1) {
+  try {
+    const total = Math.min(100, Math.max(1, parseInt(copies, 10) || 1));
+    const printer = new ThermalPrinter({
+      type: PrinterTypes.EPSON,
+      interface: String.raw`\\.\COM3`,
+      options: {
+        timeout: 1000,
+      },
+      width: 48,
+      characterSet: CharacterSet.SLOVENIA,
+      breakLine: BreakLine.WORD,
+      removeSpecialCharacters: false,
+      lineCharacter: '-',
+    });
+
+    const isConnected = await printer.isPrinterConnected();
+    console.log('Printer connected:', isConnected);
+
+    for (let i = 0; i < total; i++) {
+      printer.println();
+
+      if (number) {
+        printer.alignRight();
+        printer.setTextSize(1,1);
+        printer.println(String(number));
+        printer.setTextNormal();
+      }
+
+      printer.newLine();
+
+      printer.alignCenter();
+      printer.setTextSize(2,2);
+      printer.bold(true);
+      String(text).toUpperCase().split('\n').forEach((line) => printer.println(line));
+      printer.bold(false);
+      printer.setTextNormal();
+      printer.alignLeft();
+
+      printer.cut(); //cada via sai separada
+    }
+
+    try {
+      await printer.execute();
+      console.log('Print success.');
+    } catch (error) {
+      console.error('Print error:', error);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro na impressão livre:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+ipcMain.handle("print-custom", async (event, number, text, copies) => {
+  return printCustom(number, text, copies);
+});
 
 //devolve o estado atual
 ipcMain.handle('api-state', () => ({ state: getApiState() }));
@@ -451,8 +610,9 @@ ipcMain.handle("get-clientes-search-name", async (_e, term) => {
 //     return { success: false, message: "Erro interno ao procurar cliente pelo talão." };
 //   }
 // });
-ipcMain.handle('get-clientes-search-receipt', async (_e, id) => {
-  const r = await http.get(`/clients/search?receipt_id=${encodeURIComponent(id)}`);
+ipcMain.handle('get-clientes-search-receipt', async (_e, id, year) => {
+  const yearParam = year ? `&year=${encodeURIComponent(year)}` : '';
+  const r = await http.get(`/clients/search?receipt_id=${encodeURIComponent(id)}${yearParam}`);
   if (!r.success) return { success:false, message:r.message };
   return { success:true, data:r.data };
 });
@@ -532,18 +692,21 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
   const saveResult = await saveReceipt(receipt);
   const table_date = new Date().toLocaleDateString('pt-PT');
   if (!saveResult.success) return saveResult;
-  return printReceipt({...receipt, receipt_id: saveResult.receipt_id, table_date: table_date});
+  //no talão impresso sai o número de negócio (numeração anual), não o id interno.
+  //a delivery_date vem do saveReceipt: no ecrã só vem preenchida quando o dia
+  //foi escolhido no calendário
+  return printReceipt({...receipt, receipt_id: saveResult.number, table_date: table_date, delivery_date: saveResult.delivery_date});
 });
 
 ipcMain.handle("print-receipt", async (event, receipt) => {
   const products = typeof receipt.products_list === "string"
     ? JSON.parse(receipt.products_list)
     : receipt.products_list;
-  return printReceipt({...receipt, receipt_id: receipt.id, client_name: receipt.name, products});
+  return printReceipt({...receipt, receipt_id: receipt.number, client_name: receipt.name, products});
 });
 
-ipcMain.handle("print-number", async (event, id, name, state) => {
-  return printNumber(id, name, state);
+ipcMain.handle("print-number", async (event, id, name, state, noReceipt) => {
+  return printNumber(id, name, state, noReceipt);
 });
   
 //sqlite
@@ -947,6 +1110,27 @@ ipcMain.handle('get-receipt-by-id', async (_e, id) => {
   return { success:true, receipt:r.data.receipt };
 });
 
+//talões pela data real de entrega (um dia só)
+ipcMain.handle('get-receipts-by-delivery-date', async (_e, date) => {
+  const r = await http.get(`/receipts/by-delivery-date?date=${encodeURIComponent(date)}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, receipts:r.data.receipts };
+});
+
+//anos com talões registados
+ipcMain.handle('get-receipt-years', async () => {
+  const r = await http.get('/receipts/years');
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, years:r.data.years };
+});
+
+//pesquisa pelo número de negócio (numeração anual)
+ipcMain.handle('get-receipt-by-year-number', async (_e, number, year) => {
+  const r = await http.get(`/receipts/by-year-number?number=${encodeURIComponent(number)}&year=${encodeURIComponent(year)}`);
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, receipt:r.data.receipt };
+});
+
 //sqlite
 // ipcMain.handle("get-receipts-by-client", (event, clientId) => {
 //   try {
@@ -1093,6 +1277,12 @@ ipcMain.handle('edit-receipt', async (_e, fields) => {
 //     return { success: false, message: error.message };
 //   }
 // });
+ipcMain.handle('set-receipt-marked', async (_e, id, marked) => {
+  const r = await http.patch(`/receipts/${id}/marked`, { marked: !!marked });
+  if (!r.success) return { success:false, message:r.message };
+  return { success:true, marked: r.data?.marked };
+});
+
 ipcMain.handle('remove-receipt', async (_e, id) => {
   const r = await http.del(`/receipts/${id}`);
   if (!r.success) return { success:false, message:r.message };

@@ -1,16 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BiSearchAlt } from "react-icons/bi";
 import { IoIosArrowDropdown } from "react-icons/io";
+import { TfiWrite } from "react-icons/tfi";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Nome de cada modalidade de pesquisa. Ficam aqui em vez de em cadeias de
+// ternarios: eram duas, e acrescentar uma modalidade obrigava a mexer nas duas.
+const SEARCH_LABELS = {
+  data: "Intervalo de Datas",
+  id: "Número de Talão",
+  cliente: "Nome de Cliente",
+  telefone: "Número de Telefone",
+  ano: "Ano",
+  entrega: "Data de Levantamento",
+};
+
+// hoje em AAAA-MM-DD, em hora local (toISOString passaria por UTC)
+const hojeISO = () => {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return d.getFullYear() + "-" + mm + "-" + dd;
+};
+
 // Função para filtrar os clientes
-const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
+const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect, onCustomPrint, registerRefresh, registerApplyChange }) => {
   const [searchType, setSearchType] = useState("data"); // Tipo de filtro selecionado
   const [searchTypeState, setSearchTypeState] = useState("Todos"); // Tipo de filtro selecionado
   const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
   const [showOptions, setShowOptions] = useState(false); // Controla se as opções estão visíveis
   const [showOptionsState, setShowOptionsState] = useState(false); // Controla se as opções estão visíveis no filtro de estado
+  const [searchTypeMarked, setSearchTypeMarked] = useState("Todos"); // Filtro de marcação selecionado
+  const [showOptionsMarked, setShowOptionsMarked] = useState(false); // Controla se as opções estão visíveis no filtro de marcação
   const inputRef = useRef(null); // Ref para o campo de pesquisa
   const [debouncedTerm, setDebouncedTerm] = useState(searchTerm); // Termo de pesquisa com debounce
   const [startDate, setStartDate] = useState(""); // Data inicial
@@ -20,18 +42,39 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
   const itemRefs = useRef([]); //lista de pesquisa mostrada
   const [isSelectingClient, setIsSelectingClient] = useState(false); // Flag para impedir nova pesquisa ao selecionar cliente por causa do debounce
   const [receiptsAllStates, setReceiptsAllStates] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState(null); // Cliente escolhido, para poder repetir a pesquisa
+  const [deliveryDate, setDeliveryDate] = useState(hojeISO()); // Dia escolhido no filtro "Data de Levantamento"
+
+  // Numeração anual: anos com talões, carregados da BD (ano atual sempre presente)
+  const currentYearNum = new Date().getFullYear();
+  const [years, setYears] = useState([currentYearNum]);
+  const [searchYear, setSearchYear] = useState(currentYearNum); // Ano selecionado na pesquisa
+  const [showOptionsYear, setShowOptionsYear] = useState(false); // Controla dropdown de ano
+
+  useEffect(() => {
+    window.api.getReceiptYears().then((response) => {
+      if (response.success) {
+        const list = response.years.map(Number);
+        if (!list.includes(currentYearNum)) list.unshift(currentYearNum);
+        setYears(list);
+      }
+    }).catch(() => {});
+  }, []);
   
   const handleStates = (receipts) => {
-    if (searchTypeState === "Todos") {
-      updateFilteredReceipts(receipts);
-    } else {
-      updateFilteredReceipts(receipts.filter(r => r.state === searchTypeState));
+    let list = receipts;
+    if (searchTypeState !== "Todos") {
+      list = list.filter(r => r.state === searchTypeState);
     }
+    if (searchTypeMarked !== "Todos") {
+      list = list.filter(r => (searchTypeMarked === "Marcado" ? !!r.marked : !r.marked));
+    }
+    updateFilteredReceipts(list);
   }
 
   useEffect(() => {
     handleStates(receiptsAllStates);
-  }, [searchTypeState]); // Aplica o foco sempre que searchType mudar
+  }, [searchTypeState, searchTypeMarked]); // Reaplica os filtros em memória sempre que mudam
 
   // Função para alternar entre as opções
   const toggleOptions = () => {
@@ -51,13 +94,121 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
     setReceiptsAllStates([]);
     updateFilteredReceipts([]);
     setClients([]);
-    setInitialDates();
+    const hoje = setInitialDates();
     setSearchTypeState("Todos");
+    setSearchTypeMarked("Todos");
+    setSelectedClientId(null);
+    setSearchYear(currentYearNum);
+    const hojeDia = hojeISO();
+    setDeliveryDate(hojeDia);
+    if (option === "ano") searchByYear(currentYearNum);
+    // Escolher uma destas modalidades procura logo o dia de hoje, como já fazia o
+    // "ano". Em silêncio: quem não pediu a pesquisa não leva com o aviso se ela
+    // falhar nem com o "nenhum talão" de um dia sem entregas.
+    if (option === "data") handleDateChange(hoje, hoje, true);
+    if (option === "entrega") searchByDeliveryDate(hojeDia, true);
+  };
+
+  // Pesquisa todos os talões de um ano (reutiliza a pesquisa por datas)
+  const searchByYear = (y) => {
+    return window.api.getReceiptsByDate(`${y}-01-01`, `${y}-12-31`)
+      .then((response) => {
+        if (response.success) {
+          const receipts = response.receipts;
+          receipts.forEach(setReceiptDate);
+          setReceiptsAllStates(receipts);
+          handleStates(receipts);
+        } else {
+          toast.warn(response.message, {
+            position: "top-right",
+            autoClose: 3000,
+            className: "custom-warn-toast",
+            progressClassName: "custom-warn-progress",
+          });
+          setReceiptsAllStates([]);
+          updateFilteredReceipts([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao procurar talões por ano:", error);
+      });
+  };
+
+  // Todos os talões a levantar num dia de calendário.
+  // Nunca corre ao mudar a data: só no botão "Filtrar" ou ao escolher a
+  // modalidade, e nesse caso em silêncio (ver handleOptionSelect).
+  const searchByDeliveryDate = (dia, silencioso = false) => {
+    if (!dia) {
+      if (!silencioso) {
+        toast.warn("Escolha um dia.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "custom-warn-toast",
+          progressClassName: "custom-warn-progress",
+          toastId: "alerta-dia-levantamento",
+        });
+      }
+      return;
+    }
+    return window.api.getReceiptsByDeliveryDate(dia)
+      .then((response) => {
+        if (response.success) {
+          const receipts = response.receipts;
+          // a rota devolve lista vazia (não 404) para um dia sem entregas;
+          // o aviso é dado aqui, como nas outras pesquisas
+          if (receipts.length === 0 && !silencioso) {
+            toast.warn("Nenhum talão para levantar neste dia.", {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+              toastId: "sem-taloes-levantamento",
+            });
+          }
+          receipts.forEach(setReceiptDate);
+          setReceiptsAllStates(receipts);
+          handleStates(receipts);
+        } else {
+          if (!silencioso) {
+            toast.warn(response.message, {
+              position: "top-right",
+              autoClose: 3000,
+              className: "custom-warn-toast",
+              progressClassName: "custom-warn-progress",
+            });
+          }
+          setReceiptsAllStates([]);
+          updateFilteredReceipts([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao procurar talões por dia de entrega:", error);
+      });
+  };
+
+  // Seleção de ano no dropdown
+  const handleYearSelect = (y) => {
+    setSearchYear(y);
+    setShowOptionsYear(false);
+    if (searchType === "ano") {
+      searchByYear(y);
+    } else if (searchType === "id" && debouncedTerm) {
+      handleSearch(y);
+    }
   };
 
   const handleOptionSelectState = (option) => {
     setSearchTypeState(option);
     setShowOptionsState(false);
+  };
+
+  const toggleOptionsMarked = () => {
+    setShowOptionsMarked(!showOptionsMarked);
+  };
+
+  const handleOptionSelectMarked = (option) => {
+    setSearchTypeMarked(option);
+    setShowOptionsMarked(false);
   };
 
   // Foco no input após mudança de searchType
@@ -66,10 +217,10 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
   }, [searchType]); // Aplica o foco sempre que searchType mudar
 
   // Função para realizar a pesquisa
-  const handleSearch = () => {
+  const handleSearch = (yr = searchYear) => {
     // Chama a função de busca de acordo com o tipo de pesquisa selecionado
     if (searchType === "id") {
-      window.api.getReceiptById(debouncedTerm)
+      return window.api.getReceiptByYearNumber(debouncedTerm, yr)
         .then((response) => {
           if(response.success) {
             const receipt = response.receipt;
@@ -83,6 +234,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
             autoClose: 3000,
             className: "custom-warn-toast",
             progressClassName: "custom-warn-progress",
+            toastId: "talao-nao-encontrado",
             });
             updateFilteredReceipts([]);
           }
@@ -91,7 +243,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
           console.error("Erro ao procurar talão pelo id: ", error);
         });
     } else if (searchType === "cliente") {
-      window.api.getClientesSearchName(debouncedTerm)
+      return window.api.getClientesSearchName(debouncedTerm)
         .then((response) => {
           if(response.success) {
             const clients = response.data;
@@ -103,39 +255,31 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
           console.error("Erro ao procurar clientes:", error);
         });
     } else if (searchType === "telefone") {
-      if (debouncedTerm.length < 9) { 
-        setReceiptsAllStates([]);
-        updateFilteredReceipts([]); 
-        return;
-      }
-      window.api.getReceiptsByNumber(debouncedTerm)
+      // Como a pesquisa por nome: a lista é de clientes (por prefixo do número)
+      // e escolher um traz os talões desse cliente. Ver handleItemClick.
+      // Sem mínimo de caracteres, como no Novo Talão: o antigo `length < 9`
+      // deixava de fora os números estrangeiros e os clientes sem número.
+      return window.api.getClientesSearchNumber(debouncedTerm)
         .then((response) => {
           if (response.success) {
-            const receipts = response.receipts;
-            receipts.forEach(setReceiptDate);
-            setReceiptsAllStates(receipts);
-            handleStates(receipts);
-          } else {
-            toast.warn(response.message, {
-            position: "top-right",
-            autoClose: 3000,
-            className: "custom-warn-toast",
-            progressClassName: "custom-warn-progress",
-            });
-            setReceiptsAllStates([]);
-            updateFilteredReceipts([]);
+            const clientes = response.data;
+            clientes.sort((a, b) => a.name.localeCompare(b.name));
+            setClients(clientes);
           }
         })
-        .catch(() => {
-          console.error("Erro ao procurar talão pelo número: ", error);
+        .catch((error) => {
+          console.error("Erro ao procurar clientes pelo número:", error);
         });
     }
   };
 
-  // Função para lidar com o intervalo de datas
-  const handleDateChange = () => {
-    if (startDate && endDate) {
-      window.api.getReceiptsByDate(startDate, endDate) 
+  // Função para lidar com o intervalo de datas.
+  // As datas vêm por argumento (como o `yr` do handleSearch) para a pesquisa
+  // automática as poder passar sem esperar pelo setState, que é assíncrono.
+  // `silencioso` cala o aviso: a pesquisa que ninguém pediu falha sem incomodar.
+  const handleDateChange = (ini = startDate, fim = endDate, silencioso = false) => {
+    if (ini && fim) {
+      return window.api.getReceiptsByDate(ini, fim)
         .then((response) => {
           if(response.success) {
             const receipts = response.receipts;
@@ -143,12 +287,14 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
             setReceiptsAllStates(receipts);
             handleStates(receipts);
           } else {
+            if (!silencioso) {
               toast.warn(response.message, {
               position: "top-right",
               autoClose: 3000,
               className: "custom-warn-toast",
               progressClassName: "custom-warn-progress",
             });
+            }
             setReceiptsAllStates([]);
             updateFilteredReceipts([]);
           }
@@ -175,6 +321,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
     
     setStartDate(formattedDate);
     setEndDate(formattedDate);
+    return formattedDate; // devolvida para quem precisa dela já, sem esperar pelo setState
   };
 
 
@@ -193,7 +340,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
       handleSearch();
     } else {
       if(!debouncedTerm) {
-        if(searchType === "cliente") {
+        if(searchType === "cliente" || searchType === "telefone") {
         setClients([]);
         }
       setReceiptsAllStates([]);
@@ -203,8 +350,11 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
   }, [debouncedTerm]);
 
   // Definir a data inicial no componente
+  // O App desmonta este componente ao sair da aba Talões, por isso a montagem é
+  // a entrada na aba: é aqui que se procura o dia de hoje sem carregar no Filtrar.
   useEffect(() => {
-    setInitialDates();
+    const hoje = setInitialDates();
+    handleDateChange(hoje, hoje, true);
   }, []);
 
 
@@ -223,8 +373,9 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
     setSearchTerm(cli.name);
     //onClientChange({ name: cli.name, id: cli.id });
     setClients([]);
+    setSelectedClientId(cli.id);
 
-    window.api.getReceiptsByClient(cli.id)
+    return window.api.getReceiptsByClient(cli.id)
       .then((response) => {
         if(response.success) {
           const receipts = response.receipts;
@@ -247,6 +398,42 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
       });
   };
 
+  // Repete a pesquisa que está feita, sem mexer nos parâmetros.
+  // Usado pelo botão de refresh no cabeçalho da tabela: traz dados frescos do
+  // servidor (marcação, estado, preço, talões apagados noutro posto) e reaplica
+  // os filtros de Estado/Marcação, que são feitos em memória.
+  const refreshSearch = () => {
+    if (searchType === "data") {
+      return handleDateChange();
+    }
+    if (searchType === "ano") {
+      return searchByYear(searchYear);
+    }
+    if (searchType === "entrega") {
+      return deliveryDate ? searchByDeliveryDate(deliveryDate) : undefined;
+    }
+    if (searchType === "cliente" || searchType === "telefone") {
+      return selectedClientId ? handleItemClick({ id: selectedClientId, name: searchTerm }) : undefined;
+    }
+    return debouncedTerm ? handleSearch() : undefined;
+  };
+
+  // O botão vive na tabela, a pesquisa vive aqui: o App guarda a ponte numa ref.
+  // Sem lista de dependências, para a função registada apanhar sempre o estado atual.
+  useEffect(() => {
+    if (registerRefresh) registerRefresh.current = refreshSearch;
+  });
+
+  // Segunda ponte, pelo mesmo motivo: marcar, apagar ou guardar acontece na tabela
+  // e no preview, mas a lista de onde os filtros partem é esta. Sem isto, mexer
+  // num filtro a seguir reconstruía a tabela a partir de dados já antigos.
+  // Só atualiza a fonte; os filtros só se reaplicam quando o utilizador os mexe.
+  useEffect(() => {
+    if (registerApplyChange) {
+      registerApplyChange.current = (updater) => setReceiptsAllStates(updater);
+    }
+  });
+
   const handleChange = (value) => {
     setSearchTerm(value);
     setSelectedIndex(0);  // Resetar a seleção do item
@@ -254,7 +441,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
   };
 
   const handleKeyDown = (e) => {
-    if (searchType === "cliente") {
+    if (searchType === "cliente" || searchType === "telefone") {
       if (e.key === "Escape") {
         setClients([]);
         inputRef.current.blur();
@@ -296,8 +483,46 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
   };
 
   const handleBlur = () => {
-    setTimeout(() => setShowOptions(false), 200); 
+    setTimeout(() => setShowOptions(false), 200);
   };
+
+  // Dropdown de ano (usado na pesquisa por número e na pesquisa por ano)
+  const yearSelector = (widthClass) => (
+    <div
+      className={`relative ${widthClass} cursor-pointer`}
+      tabIndex={0}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setShowOptionsYear(false);
+        }
+      }}
+    >
+      <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={() => setShowOptionsYear(!showOptionsYear)}>
+        <input
+          type="text"
+          className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
+          value={searchYear}
+          readOnly
+        />
+        <IoIosArrowDropdown className="size-6" />
+      </div>
+      {showOptionsYear && (
+        <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto scrollbar-hidden z-50">
+          {years.map((y) => (
+            <li
+              key={y}
+              tabIndex={0}
+              className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
+                hover:bg-stone-400 hover:rounded-2xl ${searchYear === y ? "bg-stone-400 rounded-2xl" : ""}`}
+              onClick={() => handleYearSelect(y)}
+            >
+              <span>{y}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 
   return (
   <div className='h-full w-full grid grid-cols-3'>
@@ -319,7 +544,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
             type="text"
             placeholder={""}
             className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
-            value={searchType === "data" ? "Intervalo de Datas" : searchType === "id" ? "Número de Talão" : searchType === "cliente" ? "Nome de Cliente" : "Número de Telefone"}
+            value={SEARCH_LABELS[searchType]}
             readOnly
           />
           <IoIosArrowDropdown className="size-6" />
@@ -327,8 +552,8 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
 
         {/* Lista de opções */}
         {showOptions && (
-          <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
-            {["data", "id", "cliente", "telefone"].map((option, index) => (
+          <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto scrollbar-hidden z-50">
+            {["data", "entrega", "id", "cliente", "telefone", "ano"].map((option, index) => (
               <li
                 key={index}
                 tabIndex={0}
@@ -336,7 +561,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
                   hover:bg-stone-400 hover:rounded-2xl ${searchType === option ? "bg-stone-400 rounded-2xl" : ""}`}
                 onClick={() => handleOptionSelect(option)}
               >
-                <span>{option === "data" ? "Intervalo de Datas" : option === "id" ? "Número de Talão" : option === "cliente" ? "Nome de Cliente" : "Número de Telefone"}</span>
+                <span>{SEARCH_LABELS[option]}</span>
               </li>
             ))}
           </ul>
@@ -363,8 +588,9 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
             onChange={(e) => setEndDate(e.target.value)}
             className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm text-xl w-full"
           />
+          {/* seta própria: passado direto, o React mandava o evento do clique como data */}
           <button
-            onClick={handleDateChange}
+            onClick={() => handleDateChange()}
             className="flex items-center bg-[#C1C0C0] rounded-2xl text-xl pl-1 pr-1 shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95"
           >
             Filtrar
@@ -379,7 +605,8 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
         <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
           <p>{`${searchType === "id" ? "Número de Talão:" : searchType === "cliente" ? "Nome de Cliente:" : "Número de Telefone:"}`}</p>
         </div>
-        <div className='relative w-[70%]'>
+        <div className='flex w-[70%] gap-2'>
+        <div className='relative flex-1'>
           <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
             <BiSearchAlt className="size-6" />
             <input
@@ -410,26 +637,62 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
                   <span>
                     {res.name} {"("}
                   </span>
-                  <span className="opacity-50">{res.address}</span>
+                  <span className="opacity-50">{searchType === "telefone" ? res.number : res.address}</span>
                   <span>{")"}</span>
                 </div>
               );
             })}
-            
+
           </div>
         )}
+        </div>
+        {searchType === "id" && yearSelector("w-[38%]")}
         </div>
       </div>
     )}
 
-    {/* Terceira coluna: dropdown apenas se o tipo de pesquisa não for "id" */}
-    {searchType !== "id" && (
-      <div className="bg-[#E1E4F1] flex-col flex justify-center items-start col-start-3">
-        <div className='row-start-1 bg-[#E1E4F1] flex justify-center items-start flex-col w-full'>
-          <div className="flex w-[30%] text-3xl mt-3 mb-1 overflow-clip">
+    {/* Pesquisa por ano inteiro */}
+    {searchType === "ano" && (
+      <div className="h-full ml-1 flex-col flex justify-center">
+        <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
+          <p>Ano:</p>
+        </div>
+        {yearSelector("w-[35%]")}
+      </div>
+    )}
+
+    {/* Data de levantamento: um dia de calendário */}
+    {searchType === "entrega" && (
+      <div className="h-full ml-1 flex-col flex justify-center">
+        <div className="flex w-[70%] text-3xl mt-3 mb-1 overflow-clip">
+          <p>Data de Levantamento:</p>
+        </div>
+        <div className="flex space-x-4 w-[45%]">
+          <input
+            type="date"
+            value={deliveryDate}
+            onChange={(e) => setDeliveryDate(e.target.value)}
+            className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm text-xl w-full"
+          />
+          <button
+            onClick={() => searchByDeliveryDate(deliveryDate)}
+            className="flex items-center bg-[#C1C0C0] rounded-2xl text-xl pl-1 pr-1 shadow-md justify-center overflow-clip cursor-pointer border-2 border-[#928787] hover:bg-stone-400 transition duration-200 active:scale-95"
+          >
+            Filtrar
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* Terceira coluna: filtros de Estado e Marcação (exceto no tipo "id") + Impressão Livre no espaço livre */}
+    <div className="bg-[#E1E4F1] flex flex-row items-center col-start-3">
+      {searchType !== "id" && (
+      <>
+        <div className='bg-[#E1E4F1] flex justify-center items-start flex-col w-[30%]'>
+          <div className="flex w-full text-3xl mt-3 mb-1 overflow-clip">
             <p>Estado:</p>
           </div>
-          <div className="row-start-1 relative w-[30%] cursor-pointer"
+          <div className="relative w-full cursor-pointer"
             tabIndex={0}
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -450,7 +713,7 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
 
             {/* Lista de opções */}
             {showOptionsState && (
-              <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto z-50">
+              <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto scrollbar-hidden z-50">
                 {["Todos", "Pendente", "Pago", "Entregue"].map((option, index) => (
                   <li
                     key={index}
@@ -466,8 +729,60 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect }) => {
             )}
           </div>
         </div>
+
+        <div className='bg-[#E1E4F1] flex justify-center items-start flex-col w-[30%] ml-12'>
+          <div className="flex w-full text-3xl mt-3 mb-1 overflow-clip">
+            <p>Marcação:</p>
+          </div>
+          <div className="relative w-full cursor-pointer"
+            tabIndex={0}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                setShowOptionsMarked(false);
+              }
+            }}
+          >
+            <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={toggleOptionsMarked}>
+              <input
+                type="text"
+                placeholder={""}
+                className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
+                value={searchTypeMarked}
+                readOnly
+              />
+              <IoIosArrowDropdown className="size-6" />
+            </div>
+
+            {/* Lista de opções */}
+            {showOptionsMarked && (
+              <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto scrollbar-hidden z-50">
+                {["Todos", "Marcado", "Não marcado"].map((option, index) => (
+                  <li
+                    key={index}
+                    tabIndex={0}
+                    className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
+                      hover:bg-stone-400 hover:rounded-2xl ${searchTypeMarked === option ? "bg-stone-400 rounded-2xl" : ""}`}
+                    onClick={() => handleOptionSelectMarked(option)}
+                  >
+                    <span>{option}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </>
+      )}
+
+      {/* Impressão Livre: à direita com a mesma margem do ícone de backup (mr-12), à altura dos campos de filtro */}
+      <div className="flex-1 flex flex-col justify-center items-end pr-12">
+        <div className="text-3xl mt-3 mb-1 invisible select-none" aria-hidden="true">&nbsp;</div>
+        <TfiWrite
+          className="size-11 opacity-55 cursor-pointer hover:opacity-100 transition duration-200 active:scale-90"
+          onClick={onCustomPrint}
+          />
       </div>
-    )}
+    </div>
   </div>
 );
 };
