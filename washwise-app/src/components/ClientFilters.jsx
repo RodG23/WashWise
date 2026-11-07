@@ -12,6 +12,22 @@ const ClientFilters = ({ updateFilteredClients }) => {
   const inputRef = useRef(null); // Ref para o campo de pesquisa
   const [debouncedTerm, setDebouncedTerm] = useState(searchTerm); // Termo de pesquisa com debounce
 
+  // Numeração anual: anos com talões, carregados da BD (ano atual sempre presente)
+  const currentYearNum = new Date().getFullYear();
+  const [years, setYears] = useState([currentYearNum]);
+  const [searchYear, setSearchYear] = useState(currentYearNum); // Ano selecionado
+  const [showOptionsYear, setShowOptionsYear] = useState(false); // Controla dropdown de ano
+
+  useEffect(() => {
+    window.api.getReceiptYears().then((response) => {
+      if (response.success) {
+        const list = response.years.map(Number);
+        if (!list.includes(currentYearNum)) list.unshift(currentYearNum);
+        setYears(list);
+      }
+    }).catch(() => {});
+  }, []);
+
   // Função para alternar entre as opções
   const toggleOptions = () => {
     setShowOptions(!showOptions);
@@ -24,10 +40,20 @@ const ClientFilters = ({ updateFilteredClients }) => {
     inputRef.current?.focus(); // Passar o foco para o campo de pesquisa após selecionar
     setSearchTerm("");
     updateFilteredClients([]);
+    setSearchYear(currentYearNum);
+  };
+
+  // Seleção de ano no dropdown
+  const handleYearSelect = (y) => {
+    setSearchYear(y);
+    setShowOptionsYear(false);
+    if (searchType === "receipt" && debouncedTerm) {
+      handleSearch(y);
+    }
   };
 
   // Função para realizar a pesquisa
-  const handleSearch = () => {
+  const handleSearch = (yr = searchYear) => {
     // Chama a função de busca de acordo com o tipo de pesquisa selecionado
     if (searchType === "name") {
       window.api.getClientesSearchName(debouncedTerm)
@@ -50,7 +76,8 @@ const ClientFilters = ({ updateFilteredClients }) => {
         console.error("Erro inesperado ao procurar clientes:", error);
       });
     } else if (searchType === "receipt") {
-    window.api.getClientesSearchReceipt(debouncedTerm)
+    // numeração anual: pesquisa pelo número no ano selecionado
+    window.api.getClientesSearchReceipt(debouncedTerm, yr)
       .then((response) => {
         if (response.success) {
           updateFilteredClients(response.data);
@@ -60,6 +87,7 @@ const ClientFilters = ({ updateFilteredClients }) => {
             autoClose: 3000,
             className: "custom-warn-toast",
             progressClassName: "custom-warn-progress",
+            toastId: "cliente-talao-nao-encontrado",
           });
           updateFilteredClients([]);
         }
@@ -160,19 +188,58 @@ const ClientFilters = ({ updateFilteredClients }) => {
         <div className="flex w-[70%] text-3xl overflow-clip mt-3 mb-1">
           <p>{`${searchType === "name" ? "Nome de Cliente:" : searchType === "receipt" ? "Número de Talão:" : "Número de Telefone:"}`}</p>
         </div>
-        <div className='relative w-[70%]'>
-          <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
-            <BiSearchAlt className="size-6" />
-            <input
-              ref={inputRef}
-              type="text"
-              name="searchTerm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)} // Atualiza o termo de pesquisa
-              placeholder={"Procurar Cliente..."}
-              className="bg-transparent border-none outline-none text-xl ml-1 w-full"
-            />
+        <div className='flex w-[70%] gap-2'>
+          <div className='relative flex-1'>
+            <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
+              <BiSearchAlt className="size-6" />
+              <input
+                ref={inputRef}
+                type="text"
+                name="searchTerm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)} // Atualiza o termo de pesquisa
+                placeholder={"Procurar Cliente..."}
+                className="bg-transparent border-none outline-none text-xl ml-1 w-full"
+              />
+            </div>
           </div>
+          {/* Seletor de ano na pesquisa por número de talão */}
+          {searchType === "receipt" && (
+            <div
+              className="relative w-[38%] cursor-pointer"
+              tabIndex={0}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setShowOptionsYear(false);
+                }
+              }}
+            >
+              <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center" onClick={() => setShowOptionsYear(!showOptionsYear)}>
+                <input
+                  type="text"
+                  className="bg-transparent border-none outline-none text-xl ml-1 w-full cursor-pointer"
+                  value={searchYear}
+                  readOnly
+                />
+                <IoIosArrowDropdown className="size-6" />
+              </div>
+              {showOptionsYear && (
+                <ul className="absolute top-full left-0 w-full bg-[#C1C0C0] rounded-2xl shadow-lg mt-1 max-h-[200px] overflow-y-auto scrollbar-hidden z-50">
+                  {years.map((y) => (
+                    <li
+                      key={y}
+                      tabIndex={0}
+                      className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
+                        hover:bg-stone-400 hover:rounded-2xl ${searchYear === y ? "bg-stone-400 rounded-2xl" : ""}`}
+                      onClick={() => handleYearSelect(y)}
+                    >
+                      <span>{y}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

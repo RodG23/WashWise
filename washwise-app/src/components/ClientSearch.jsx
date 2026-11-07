@@ -1,26 +1,31 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, forwardRef } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 //Passagem para app do nome e id de cliente
-//Get de clientes sem number, não é necessário
-const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
+//searchType: "name" pesquisa por nome, "phone" por prefixo de telefone
+const ClientSearch = forwardRef(({ saveTrigger, onClientChange, refSearchRef, searchType, noReceipt }, ref) => {
   const [result, setResult] = useState([]); //lista de pesquisa
   const [input, setInput] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0); //indice selecionado
 
-  const inputRef = useRef(null); //refereencia para input
   const itemRefs = useRef([]); //lista de pesquisa mostrada
   const [debouncedTerm, setDebouncedTerm] = useState(input); // Termo de pesquisa com debounce
   const [isSelectingClient, setIsSelectingClient] = useState(false); // Flag para impedir nova pesquisa ao selecionar cliente por causa do debounce
-  
+
   useEffect(() => {
     if (saveTrigger) {
       setInput("");
       setResult([]);
     }
   }, [saveTrigger]);
+
+  //mudar o modo de pesquisa limpa o campo e os resultados
+  useEffect(() => {
+    setInput("");
+    setResult([]);
+  }, [searchType]);
 
   // Usar o useEffect para debouncing
   useEffect(() => {
@@ -42,18 +47,33 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
 
   //filtrar pesquisa
   const filterClients = () => {
-    window.api.getClientesSearchName(debouncedTerm)
-    .then((response) => {
-        if (response.success) {
-          const clientes = response.data;
-          clientes.sort((a, b) => a.name.localeCompare(b.name));
-          setResult(clientes);
-        } else if (!response.success) {
-          setResult([]);
-        }})
-    .catch((error) => {
-      console.error("Erro ao procurar clientes:", error);
-    });
+    if (searchType === "phone") {
+      window.api.getClientesSearchNumber(debouncedTerm)
+      .then((response) => {
+          if (response.success) {
+            const clientes = response.data;
+            clientes.sort((a, b) => a.name.localeCompare(b.name));
+            setResult(clientes);
+          } else if (!response.success) {
+            setResult([]);
+          }})
+      .catch((error) => {
+        console.error("Erro ao procurar clientes por número:", error);
+      });
+    } else {
+      window.api.getClientesSearchName(debouncedTerm)
+      .then((response) => {
+          if (response.success) {
+            const clientes = response.data;
+            clientes.sort((a, b) => a.name.localeCompare(b.name));
+            setResult(clientes);
+          } else if (!response.success) {
+            setResult([]);
+          }})
+      .catch((error) => {
+        console.error("Erro ao procurar clientes:", error);
+      });
+    }
   };
 
   const handleBlur = () => {
@@ -87,7 +107,8 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
   const handleItemClick = (cli) => {
     setIsSelectingClient(true); // Impede que a pesquisa seja disparada
     setInput(cli.name);
-    onClientChange({ name: cli.name, id: cli.id });
+    // no_receipt segue para cima: é o que marca o cliente na aba Novo Talão
+    onClientChange({ name: cli.name, id: cli.id, no_receipt: !!cli.no_receipt });
     setResult([]);
     //inputRef.current?.blur();
     refSearchRef.current?.focus();
@@ -96,7 +117,7 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
       setResult([]);
-      inputRef.current.blur();
+      ref.current?.blur();
     }
 
     if (e.key === "Enter") {
@@ -143,12 +164,13 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
 
   return (
     <div className="relative w-[70%]">
-      <div className="bg-[#C1C0C0] rounded-2xl p-3 shadow-sm flex items-center">
+      {/* a própria caixa fica areia enquanto estiver escolhido um Sem Talão */}
+      <div className={`rounded-2xl p-3 shadow-sm flex items-center ${noReceipt ? "bg-[#E0DAD1]" : "bg-[#C1C0C0]"}`}>
         <BiSearchAlt className="size-6" />
         <input
-          ref={inputRef}
+          ref={ref}
           type="text"
-          placeholder="Procurar Cliente..."
+          placeholder={searchType === "phone" ? "Procurar Número..." : "Procurar Cliente..."}
           className="bg-transparent border-none outline-none text-xl ml-1 w-full"
           value={input}
           onChange={(e) => handleChange(e.target.value)}
@@ -166,16 +188,25 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
               <div
                 key={id}
                 ref={(el) => (itemRefs.current[id] = el)}
+                // areia marca os Sem Talão já na lista, para se ver antes de escolher.
+                // Nestes o hover e o destaque do teclado usam um areia mais escuro
+                // (#CDC3B5): mantém a cor da marca e continua a responder ao rato.
                 className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
-                  hover:bg-stone-400 hover:rounded-2xl ${
-                    isHighlighted ? "bg-stone-400 rounded-2xl" : ""
+                  hover:rounded-2xl ${
+                    res.no_receipt
+                      ? isHighlighted
+                        ? "bg-[#CDC3B5] rounded-2xl hover:bg-[#CDC3B5]"
+                        : "bg-[#E0DAD1] rounded-2xl hover:bg-[#CDC3B5]"
+                      : isHighlighted
+                      ? "bg-stone-400 rounded-2xl hover:bg-stone-400"
+                      : "hover:bg-stone-400"
                   }`}
                 onClick={() => handleItemClick(res)}
               >
                 <span>
                   {res.name} {"("}
                 </span>
-                <span className="opacity-50">{res.address}</span>
+                <span className="opacity-50">{searchType === "phone" ? res.number : res.address}</span>
                 <span>{")"}</span>
               </div>
             );
@@ -184,6 +215,6 @@ const ClientSearch = ({ saveTrigger, onClientChange, refSearchRef }) => {
       )}
     </div>
   );
-};
+});
 
 export default ClientSearch;

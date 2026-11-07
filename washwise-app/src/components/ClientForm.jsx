@@ -8,6 +8,7 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
   const [id, setId] = useState(selectedClientEdit?.id || "");
   const [number, setNumber] = useState(selectedClientEdit?.number || "");
   const [address, setAddress] = useState(selectedClientEdit?.address || "");
+  const [noReceipt, setNoReceipt] = useState(!!selectedClientEdit?.no_receipt); // Sem Talão: muda o formato da etiqueta impressa
   const [isNewClientActive, setIsNewClientActive] = useState(true); // Para controlar o estado dos botões
 
   // refs para inputs
@@ -28,6 +29,7 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
       setName(selectedClientEdit.name);
       setNumber(selectedClientEdit.number);
       setAddress(selectedClientEdit.address);
+      setNoReceipt(!!selectedClientEdit.no_receipt);
       setIsNewClientActive(false); // Desabilitar "Novo Cliente" quando estiver a editar
     } else {
       // Limpar os campos se não houver cliente selecionado (modo de criação)
@@ -35,12 +37,13 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
       setName("");
       setNumber("");
       setAddress("");
+      setNoReceipt(false);
       setIsNewClientActive(true); // Ativar "Novo Cliente" quando não estiver a editar
     }
   }, [selectedClientEdit]);
 
   const handleSave = () => {
-    const clientData = { id, name, number, address };
+    const clientData = { id, name, number, address, no_receipt: noReceipt };
     if (isEditing) {
       window.api.editClient(clientData)
         .then(response => {
@@ -48,7 +51,7 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
             toast.success(response.message ,{
               toastId: "edit-client-success",
             });
-            updateFilteredClients(prevClients => prevClients.map(client => client.id === id ? { ...client, name, number, address } : client));
+            updateFilteredClients(prevClients => prevClients.map(client => client.id === id ? { ...client, name, number, address, no_receipt: noReceipt }   : client));
             handleNewClient(); // Limpa os dados do cliente após a edição
           } else {
             toast.warn(response.message, {
@@ -88,6 +91,7 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
     setName("");
     setNumber("");
     setAddress("");
+    setNoReceipt(false);
     setIsNewClientActive(true); // Ativa o botão "Novo Cliente" novamente após salvar
   };
 
@@ -98,6 +102,7 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
     setName("");
     setNumber("");
     setAddress("");
+    setNoReceipt(false);
     setIsNewClientActive(true); // Ativar "Novo Cliente"
   };
 
@@ -183,7 +188,22 @@ const ClientForm = ({ selectedClientEdit, isEditing, handleNewClient, updateFilt
           />
         </div>
 
-        <div className="flex justify-center mt-14">
+        {/* Sem Talão: muda o formato da etiqueta impressa deste cliente.
+            Mesmo desenho das caixas do CheckboxSelector (texto à esquerda) */}
+        <div className="flex justify-center mt-8">
+          <label className="flex items-center justify-center space-x-2 cursor-pointer text-2xl select-none">
+            <span>Sem Talão</span>
+            <input
+              id="client-no-receipt"
+              type="checkbox"
+              checked={noReceipt}
+              onChange={(e) => setNoReceipt(e.target.checked)}
+              className="size-5 accent-[#928181] ring-1 ring-[#928181] rounded-2xl"
+            />
+          </label>
+        </div>
+
+        <div className="flex justify-center mt-8">
           <button
             onClick={handleSave}
             className="p-5 pt-3 pb-3 text-center font-normal text-3xl shadow-sm rounded-2xl justify-center overflow-clip border-3  border-[#928787] bg-[#C1C0C0] hover:bg-stone-400 transition duration-200 active:scale-95"

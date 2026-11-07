@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { IoIosArrowDropup } from "react-icons/io";
+import { IoIosArrowDropup, IoIosClose } from "react-icons/io";
+import { BiSearchAlt } from "react-icons/bi";
 import { TbArrowBigDownLines } from "react-icons/tb";
 import { HiOutlineIdentification } from "react-icons/hi";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { textoLevantamento } from "../utils/datas";
 
-const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, updateFilteredReceipts, activeTab }) => {
+const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, applyReceiptChange, activeTab }) => {
 
   const [value, setValue] = useState(0); // Guarda valor da edição
   const numberOfLinesToRender = 4;
@@ -13,7 +15,12 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
   const [editingState, setEditingState] = useState(""); // estado do talão
   const [productsState, setProductsState] = useState([]);
 
-  //Refs para fechos por clique fora 
+  // Pesquisa dentro da lista de peças do talão aberto
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchInputRef = useRef(null);
+
+  //Refs para fechos por clique fora
   const stateDropdownRef = useRef(null);
 
   //Context Menu
@@ -21,6 +28,34 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
   const ctxMenuRef = useRef(null);
 
   const closeCtx = () => setCtxMenu({ open: false, x: 0, y: 0, rowIndex: null });
+
+  const openSearch = () => setSearchOpen(true);
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchTerm("");
+  };
+
+  // Mesma regra de normalizacao do resto do projeto (ver description_normalized
+  // no main.js): sem acentos e sem maiusculas, para "camisao" achar "Camisão".
+  // Escrito sem regex de proposito: os escapes unicode nao sobrevivem a edicao
+  // por script (ver a armadilha dos bytes de controlo no CLAUDE.md).
+  // 768..879 = os acentos combinantes que o NFD separa das letras.
+  const normalizeText = (text) =>
+    String(text ?? "")
+      .normalize("NFD")
+      .split("")
+      .filter((c) => {
+        const code = c.charCodeAt(0);
+        return code < 768 || code > 879;
+      })
+      .join("")
+      .toLowerCase();
+
+  // Foca a caixa assim que ela abre, para se escrever sem mais um clique
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
 
   const handleRowContextMenu = (e, index, { isReal }) => {
     if (!isEditing || !isReal) return; // só em edição e linhas reais
@@ -49,6 +84,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
       if (e.key === "Escape") {
         closeCtx();
         setShowOptionsState(false);
+        closeSearch();
       }
     };
 
@@ -69,6 +105,9 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
   const handleRowInsertAtEnd = () => {
     setProductsState(prev => [...prev, { quantity: 0, description: "", note: "", bagged: 0 }]);
     closeCtx();
+    // Com a pesquisa ligada a linha nova sai vazia e o filtro escondia-a logo,
+    // dando a impressao de que o clique nao fez nada.
+    closeSearch();
   };
 
   useEffect(() => {
@@ -77,12 +116,30 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
     }
   }, [activeTab]);
 
-  // Linhas a renderizar mantendo 4 colunas originais
-  const receiptsWithEmptyRows = (() => {
-    const base = [...productsState];
-    const pad = Math.max(0, numberOfLinesToRender - base.length);
-    return [...base, ...Array(pad).fill(null)];
+  const isSearching = searchOpen && searchTerm.trim() !== "";
+
+  // Somas do cabeçalho: sempre sobre a lista toda, mesmo com o filtro ligado
+  const totalQuantity = productsState.reduce((acc, item) => acc + Number(item?.quantity || 0), 0);
+  const totalBagged = productsState.reduce((acc, item) => acc + Number(item?.bagged || 0), 0);
+
+  // O productsState NUNCA e filtrado: cada linha leva atras o seu indice real,
+  // senao com a pesquisa ligada mexia-se na linha errada (os handlers todos
+  // trabalham por posicao).
+  const matchedRows = (() => {
+    const rows = productsState.map((item, realIndex) => ({ item, realIndex }));
+    if (!isSearching) return rows;
+    const needle = normalizeText(searchTerm.trim());
+    return rows.filter(({ item }) =>
+      normalizeText(item?.description).includes(needle) ||
+      normalizeText(item?.note).includes(needle)
+    );
   })();
+
+  // Enche ate 4 linhas para a tabela nao esticar as linhas que sobram
+  const rowsToRender = [
+    ...matchedRows,
+    ...Array(Math.max(0, numberOfLinesToRender - matchedRows.length)).fill(null),
+  ];
 
   const handleChange = (value) => setValue(value);
 
@@ -102,6 +159,8 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
   };
 
   useEffect(() => {
+    // Trocar de talão nunca deve herdar a pesquisa do anterior
+    closeSearch();
     if (selectedReceiptEdit?.products_list) {
       try {
         const parsed = typeof selectedReceiptEdit.products_list === "string"
@@ -177,20 +236,20 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
       id: selectedReceiptEdit.id,
       total_price: value,
       products_list: JSON.stringify(productsState),
-      state: editingState,
+      state: editingState
     };
     window.api.editReceipt(updatedFields)
       .then(response => {
         if (response.success) {
           toast.success(response.message, { toastId: "edit-receipt-success" });
-          updateFilteredReceipts(prevReceipts =>
+          applyReceiptChange(prevReceipts =>
             prevReceipts.map(receipt =>
-              receipt.id === selectedReceiptEdit.id
+              receipt && receipt.id === selectedReceiptEdit.id
                 ? {
                     ...receipt,
                     total_price: value,
                     products_list: JSON.stringify(productsState),
-                    state: editingState,
+                    state: editingState
                   }
                 : receipt
             )
@@ -211,7 +270,8 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
   };
 
   const handlePrint = async () => {
-    const response = await window.api.printNumber(selectedReceiptEdit.id, selectedReceiptEdit.name, selectedReceiptEdit.state);
+    // no_receipt vem do cliente pelo JOIN das pesquisas de talões
+    const response = await window.api.printNumber(selectedReceiptEdit.number, selectedReceiptEdit.name, selectedReceiptEdit.state, !!selectedReceiptEdit.no_receipt);
     if (response.success) {
       toast.success("Impresso com sucesso!", {});
     } else {
@@ -239,7 +299,7 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
         </div>
         <div className= "col-start-2 flex justify-end items-start pr-4 text-xl gap-1">
           <p className="font-bold">Nº: E -</p>
-          {selectedReceiptEdit?.id || "[.....]"}
+          {selectedReceiptEdit?.number || "[.....]"}
         </div>
         <div className= "col-start-2 flex flex-col items-end pr-4 leading-tight">
           <div>{selectedReceiptEdit?.table_date || "dd-mm-aaaa"}</div>
@@ -276,22 +336,51 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
               <tr className="">
                 <th className="w-4/24 p-2 font-normal text-xl text-center border-2 border-r-4 border-b-4 border-t-0 border-[#B8B8B8] pt-5 pb-5">
                   Qt.
-                  {receiptsWithEmptyRows.length > 4 && (
+                  {productsState.length > numberOfLinesToRender && (
                     <TbArrowBigDownLines className="inline text-blue-700" />
                   )}
                 </th>
                 <th className="w-11/24 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-[#B8B8B8]">
-                  Peça {selectedReceiptEdit && (
-                    <> (
-                      {receiptsWithEmptyRows.reduce(
-                        (acc, item) => acc + Number(item?.quantity || 0),
-                        0
-                      )}) - (
-                      {receiptsWithEmptyRows.reduce(
-                        (acc, item) => acc + Number(item?.bagged || 0),
-                        0
+                  {searchOpen ? (
+                    <div className="flex items-center gap-1">
+                      <BiSearchAlt className="size-5 shrink-0 opacity-70" />
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Procurar peça..."
+                        className="bg-transparent border-none outline-none text-xl font-normal w-full min-w-0"
+                      />
+                      {isSearching && (
+                        <span
+                          className={`text-base shrink-0 whitespace-nowrap ${
+                            matchedRows.length === 0 ? "text-red-600" : "opacity-60"
+                          }`}
+                        >
+                          {matchedRows.length}/{productsState.length}
+                        </span>
                       )}
-                      )</>
+                      <IoIosClose
+                        className="size-7 shrink-0 cursor-pointer opacity-70 hover:opacity-100"
+                        onClick={closeSearch}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-1">
+                      <span>
+                        Peça {selectedReceiptEdit && (
+                          <>({totalQuantity}) - ({totalBagged})</>
+                        )}
+                      </span>
+                      {productsState.length > numberOfLinesToRender && (
+                        <BiSearchAlt
+                          className="size-5 shrink-0 cursor-pointer opacity-60 hover:opacity-100"
+                          onClick={openSearch}
+                          title="Procurar peça nesta lista"
+                        />
+                      )}
+                    </div>
                   )}
                 </th>
                 <th className="w-5/24 p-2 font-normal text-xl text-left border-2 border-r-0 border-b-4 border-t-0 border-l-0 border-[#B8B8B8]">
@@ -303,12 +392,14 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
               </tr>
             </thead>
             <tbody>
-              {receiptsWithEmptyRows.map((item, index) => {
-                const isReal = !!item;
+              {rowsToRender.map((row, renderIndex) => {
+                const isReal = !!row;
+                const item = row?.item;
+                const index = row?.realIndex; // indice no productsState, nao na vista
 
                 return (
                   <tr
-                    key={index}
+                    key={isReal ? `peca-${index}` : `vazia-${renderIndex}`}
                     onContextMenu={(e) => handleRowContextMenu(e, index, { isReal })}
                   >
                     {/* Quantidade */}
@@ -406,8 +497,8 @@ const ReceiptPreview = ({ selectedReceiptEdit, isEditing, handleNewReceipt, upda
         />
       </div>
       <div className="gap-1 flex justify-center items-center text-xl row-start-10 col-start-2 overflow-auto">
-        <p className="font-bold">Levantamento:</p>  
-        {selectedReceiptEdit?.date || ""}
+        <p className="font-bold">Levantamento:</p>
+        {textoLevantamento(selectedReceiptEdit?.date, selectedReceiptEdit?.delivery_date)}
       </div>
       <div className="row-start-11 flex justify-center items-start">
         <div

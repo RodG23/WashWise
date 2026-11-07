@@ -147,25 +147,103 @@ async function backupDatabase() {
 //   }
 // }
 
+// Regra: a próxima ocorrência do dia, SEMPRE no futuro. Um talão feito numa
+// quinta com "5ª" é para a quinta seguinte, não para o próprio dia.
+// Devolve null para tudo o que não seja um dia da semana ("15 Dias", "Outro",
+// datas escritas à mão) — um talão sem data de entrega é válido.
+const WEEKDAYS = { '2ª': 1, '3ª': 2, '4ª': 3, '5ª': 4, '6ª': 5, 'Sab': 6, 'Sº': 6 };
+
+function deliveryDateFor(dateText, base = new Date()) {
+  if (!dateText) return null;
+  // corta o modificador: "5ª (Sem falta)" -> "5ª"
+  const dia = String(dateText).split('(')[0].trim();
+  const alvo = WEEKDAYS[dia];
+  if (alvo === undefined) return null;
+
+  // 1..7 dias à frente; delta 0 (mesmo dia) vira 7 pela regra acima
+  const delta = ((alvo - base.getDay() + 6) % 7) + 1;
+
+  // meia-noite local + setDate(): somar dias assim é imune às mudanças de hora
+  // de março e outubro, ao contrário de somar milissegundos
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  d.setDate(d.getDate() + delta);
+
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + mm + '-' + dd;
+}
+
+// Cópia do textoLevantamento do src/utils/datas.js — o renderer e o main
+// correm em processos diferentes e não partilham módulos. Mexer nos dois.
+const MESES_TALAO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const DIAS_TALAO = ['Dom', '2ª', '3ª', '4ª', '5ª', '6ª', 'Sab'];
+
+// "5ª" + 2026-05-15 -> "5ª (15 Mai)"; com modificador -> "5ª (15 Mai) - Sem falta".
+// O dia da semana vem sempre da data real, para o dia e a data nunca se
+// contradizerem; do texto gravado só se aproveita o modificador. Sem data real
+// (talões antigos) fica o texto tal como foi gravado.
+function textoLevantamento(dateText, deliveryDate) {
+  const texto = dateText || '';
+  if (!deliveryDate) return texto;
+
+  // aqui a data vem sempre como "2026-05-15" (TEXT no SQLite), mas o slice
+  // deixa a função igual à da lavandaria, que também recebe ISO com fuso
+  const iso = String(deliveryDate).slice(0, 10);
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return texto;
+
+  // data construída em hora local: com new Date(texto) o dia da semana podia
+  // escorregar por causa do fuso
+  const dia = DIAS_TALAO[new Date(y, m - 1, d).getDay()];
+  const data = Number(d) + ' ' + MESES_TALAO[m - 1];
+
+  const partes = texto.split('(');
+  const modificador = partes.length > 1 ? partes[1].replace(')', '').trim() : '';
+
+  return dia + ' (' + data + ')' + (modificador ? ' - ' + modificador : '');
+}
+
 async function saveReceipt(receipt) {
   try {
     const now = new Date();
     const createdAt = now.toLocaleString("sv-SE").replace("T", " ");
-    const stmt = db.prepare(`
-      INSERT INTO receipts (client_id, products_list, state, total_price, date, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    const info = stmt.run(
-      receipt.client_id,
-      JSON.stringify(receipt.products),
-      receipt.state,
-      Math.trunc(receipt.total_price*100)/100,
-      receipt.date,
-      createdAt
-    );
-    //console.log(receipt.products);
+    const year = now.getFullYear();
 
-    return { success: true, receipt_id: info.lastInsertRowid, client_id: receipt.client_id };
+    //Reserva o número do ano e grava o talão de uma só vez. Se alguma coisa
+    //falhar a meio, o contador não avança e não fica um número queimado.
+    //No primeiro talão de um ano novo o contador é criado e começa no 1.
+    const guardar = db.transaction(() => {
+      const { last_number: number } = db.prepare(`
+        INSERT INTO year_counters (year, last_number) VALUES (?, 1)
+        ON CONFLICT(year) DO UPDATE SET last_number = last_number + 1
+        RETURNING last_number
+      `).get(year);
+
+      // Do calendário vem já pronta; do dia da semana é calculada aqui, no único
+      // ponto por onde passam Guardar e Guardar+Imprimir.
+      const deliveryDate = receipt.delivery_date || deliveryDateFor(receipt.date);
+
+      const info = db.prepare(`
+        INSERT INTO receipts (client_id, products_list, state, total_price, date, created_at, year, number, delivery_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        receipt.client_id,
+        JSON.stringify(receipt.products),
+        receipt.state,
+        Math.trunc(receipt.total_price*100)/100,
+        receipt.date,
+        createdAt,
+        year,
+        number,
+        deliveryDate
+      );
+
+      return { receipt_id: info.lastInsertRowid, number, delivery_date: deliveryDate };
+    });
+
+    const { receipt_id, number, delivery_date } = guardar();
+
+    return { success: true, receipt_id, client_id: receipt.client_id, year, number, delivery_date };
   } catch (error) {
     console.error("Erro ao guardar o talão: ", error);
     return { success: false, error: error.message };
@@ -307,7 +385,7 @@ async function printReceipt(receipt) {
     printer.bold(true);
     printer.print("Levantamento: ");
     printer.bold(false);
-    printer.println(receipt.date);
+    printer.println(textoLevantamento(receipt.date, receipt.delivery_date));
     printer.newLine();
   
     printer.cut();
@@ -328,7 +406,21 @@ async function printReceipt(receipt) {
   }
 }
 
-async function printNumber(id, name, state) {
+// Clientes "Sem Talão": a etiqueta sai com o nome em grande e o número pequeno
+// ao canto, em vez do número em grande. É propriedade do cliente, não do
+// talão — mudar o tipo vale também para reimpressões de talões antigos.
+//
+// Larguras reais do papel (ESC/POS GS ! n, 48 caracteres a 1x):
+//   setTextSize(2,2) = 3x -> 16 caracteres por linha
+//   setTextSize(1,1) = 2x -> 24 caracteres por linha
+// A mediana dos nomes desta loja é 14, mas 589 dos 2331 (25%) passam dos 16;
+// por isso acima desse limite desce-se um degrau em vez de partir o nome em
+// quatro linhas. A palavra mais comprida da base tem 18 letras, que já não cabe
+// a 3x — mas um nome desses passa dos 16 e cai para 2x, onde cabe. Ou seja, o
+// BreakLine.WORD nunca corta uma palavra ao meio.
+const NOME_LARGURA_3X = 16;
+
+async function printNumber(id, name, state, noReceipt = false) {
   try {
     const printer = new ThermalPrinter({
       type: PrinterTypes.EPSON, // 'star' or 'epson'
@@ -348,16 +440,35 @@ async function printNumber(id, name, state) {
 
     printer.println();
     printer.println();
-  
-    printer.alignCenter();
-    printer.setTextSize(7,7);
-    printer.println(`E-${id}`);
-    printer.newLine();
-    printer.setTextSize(1,1);
-    if (state === "Pago") {
-      printer.println(`${name} - Pago`);
+
+    // O texto é o mesmo nos dois formatos; só muda o que vai em grande
+    const texto = state === "Pago" ? `${name} - Pago` : name;
+
+    if (noReceipt) {
+      // Sem Talão: número pequeno encostado à direita, nome em grande ao centro
+      printer.alignRight();
+      printer.setTextSize(1,1);
+      printer.println(`E-${id}`);
+      printer.setTextNormal();
+      printer.newLine();
+
+      printer.alignCenter();
+      // desce de 3x para 2x quando o nome não cabe numa linha, em vez de o
+      // partir em várias linhas de letra grande
+      const escala = texto.length > NOME_LARGURA_3X ? 1 : 2;
+      printer.setTextSize(escala, escala);
+      printer.bold(true);
+      printer.println(texto.toUpperCase());
+      printer.bold(false);
+      printer.setTextNormal();
     } else {
-      printer.println(name);
+      // Formato de sempre: número em grande, nome pequeno por baixo
+      printer.alignCenter();
+      printer.setTextSize(7,7);
+      printer.println(`E-${id}`);
+      printer.newLine();
+      printer.setTextSize(1,1);
+      printer.println(texto);
     }
     printer.cut();
 
@@ -376,10 +487,68 @@ async function printNumber(id, name, state) {
 } 
 
 
+//copies: nº de vias; o ciclo fica aqui para todas irem num só execute()
+async function printCustom(number, text, copies = 1) {
+  try {
+    const total = Math.min(100, Math.max(1, parseInt(copies, 10) || 1));
+    const printer = new ThermalPrinter({
+      type: PrinterTypes.EPSON,
+      interface: String.raw`\\.\COM3`,
+      options: {
+        timeout: 1000,
+      },
+      width: 48,
+      characterSet: CharacterSet.SLOVENIA,
+      breakLine: BreakLine.WORD,
+      removeSpecialCharacters: false,
+      lineCharacter: '-',
+    });
+
+    const isConnected = await printer.isPrinterConnected();
+    console.log('Printer connected:', isConnected);
+
+    for (let i = 0; i < total; i++) {
+      printer.println();
+
+      if (number) {
+        printer.alignRight();
+        printer.setTextSize(1,1);
+        printer.println(String(number));
+        printer.setTextNormal();
+      }
+
+      printer.newLine();
+
+      printer.alignCenter();
+      printer.setTextSize(2,2);
+      printer.bold(true);
+      String(text).toUpperCase().split('\n').forEach((line) => printer.println(line));
+      printer.bold(false);
+      printer.setTextNormal();
+      printer.alignLeft();
+
+      printer.cut(); //cada via sai separada
+    }
+
+    try {
+      await printer.execute();
+      console.log('Print success.');
+    } catch (error) {
+      console.error('Print error:', error);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro na impressão livre:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+
 //operações de clientes
 ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
   try {
-    const query = "SELECT id, name, number, address FROM clients WHERE name LIKE ?";
+    const query = "SELECT id, name, number, address, no_receipt FROM clients WHERE name LIKE ?";
     const result = db.prepare(query).all(`%${searchTerm}%`);
 
     if (result.length === 0) {
@@ -394,20 +563,26 @@ ipcMain.handle("get-clientes-search-name", (event, searchTerm) => {
 
 
 
-ipcMain.handle("get-clientes-search-receipt", (event, searchTerm) => {
+ipcMain.handle("get-clientes-search-receipt", (event, searchTerm, year) => {
   try {
-    const query = `
-      SELECT 
-        c.id,
-        c.name,
-        c.number,
-        c.address
+    //com ano usa a numeração anual; sem ano cai no id interno (retrocompatível)
+    const query = year
+      ? `
+      SELECT c.id, c.name, c.number, c.address, c.no_receipt
+      FROM receipts r
+      JOIN clients c ON r.client_id = c.id
+      WHERE r.year = ? AND r.number = ?;
+    `
+      : `
+      SELECT c.id, c.name, c.number, c.address, c.no_receipt
       FROM receipts r
       JOIN clients c ON r.client_id = c.id
       WHERE r.id = ?;
     `;
 
-    const result = db.prepare(query).all(searchTerm);
+    const result = year
+      ? db.prepare(query).all(year, searchTerm)
+      : db.prepare(query).all(searchTerm);
 
     if (result.length === 0) {
       return { success: false, message: "Talão não existe." };
@@ -424,7 +599,7 @@ ipcMain.handle("get-clientes-search-number", (event, searchTerm) => {
   try {
     const query = `
       SELECT 
-        id, name, address, number
+        id, name, address, number, no_receipt
       FROM clients
       WHERE number LIKE ?;
     `;
@@ -456,15 +631,22 @@ ipcMain.handle("save-print-receipt", async (event, receipt) => {
   const saveResult = await saveReceipt(receipt);
   const table_date = new Date().toLocaleDateString('pt-PT');
   if (!saveResult.success) return saveResult;
-  return printReceipt({...receipt, receipt_id: saveResult.receipt_id, table_date: table_date});
+  //no talão impresso sai o número de negócio (numeração anual), não o id interno
+  //a delivery_date vem do saveReceipt: no ecrã só vem preenchida quando o dia
+  //foi escolhido no calendário; nos dias da semana é calculada ao gravar
+  return printReceipt({...receipt, receipt_id: saveResult.number, table_date: table_date, delivery_date: saveResult.delivery_date});
 });
 
 ipcMain.handle("print-receipt", async (event, receipt) => {
-  return printReceipt({...receipt, receipt_id: receipt.id, client_name: receipt.name, products: JSON.parse(receipt.products_list)});
+  return printReceipt({...receipt, receipt_id: receipt.number, client_name: receipt.name, products: JSON.parse(receipt.products_list)});
 });
 
-ipcMain.handle("print-number", async (event, id, name, state) => {
-  return printNumber(id, name, state);
+ipcMain.handle("print-number", async (event, id, name, state, noReceipt) => {
+  return printNumber(id, name, state, noReceipt);
+});
+
+ipcMain.handle("print-custom", async (event, number, text, copies) => {
+  return printCustom(number, text, copies);
 });
   
 ipcMain.handle("add-cliente", async (event, cliente) => {
@@ -473,8 +655,9 @@ ipcMain.handle("add-cliente", async (event, cliente) => {
   }
 
   try {
-    const stmt = db.prepare("INSERT INTO clients (name, number, address) VALUES (?, ?, ?)");
-    stmt.run(cliente.name, cliente.number, cliente.address);
+    //no_receipt: propriedade do cliente, muda o formato da etiqueta impressa
+    const stmt = db.prepare("INSERT INTO clients (name, number, address, no_receipt) VALUES (?, ?, ?, ?)");
+    stmt.run(cliente.name, cliente.number, cliente.address, cliente.no_receipt === true ? 1 : 0);
 
     return { success: true, message: "Cliente criado com sucesso!" };
   } catch (error) {
@@ -517,15 +700,15 @@ ipcMain.handle("edit-client", async (event, client) => {
     return { success: false, message: "Por favor, preencha todos os campos." };
   }
 
-  const { id, name, number, address } = client;
+  const { id, name, number, address, no_receipt } = client;
 
   try {
     const query = `
       UPDATE clients
-      SET name = ?, number = ?, address = ?
+      SET name = ?, number = ?, address = ?, no_receipt = ?
       WHERE id = ?
     `;
-    const result =db.prepare(query).run(name, number, address, id); // Passando os dados para o UPDATE
+    const result =db.prepare(query).run(name, number, address, no_receipt === true ? 1 : 0, id); // Passando os dados para o UPDATE
     
     if (result.changes > 0) {
       return { success: true, message: "Cliente atualizado com sucesso!" };
@@ -543,17 +726,15 @@ ipcMain.handle("edit-client", async (event, client) => {
   }
 });
 
+//Espreita o próximo número do ano atual sem o reservar
 ipcMain.handle("get-next-receipt-id", () => {
   try {
-    const row = db.prepare(`
-      SELECT COALESCE(seq, 0) + 1 AS next_id
-      FROM sqlite_sequence
-      WHERE name = 'receipts'
-    `).get();
+    const row = db.prepare("SELECT last_number FROM year_counters WHERE year = ?")
+                  .get(new Date().getFullYear());
 
-    return { success: true, nextId: row.next_id };
+    return { success: true, nextId: row ? row.last_number + 1 : 1 };
   } catch (error) {
-    console.error("Erro ao obter próximo id:", error);
+    console.error("Erro ao obter próximo número:", error);
     return { success: false, message: "Erro ao obter próximo número do talão" };
   }
 });
@@ -749,7 +930,7 @@ ipcMain.handle("edit-ref", (event, product) => {
 ipcMain.handle("get-receipt-by-id", (event, receiptId) => {
   try {
     const query = `
-      SELECT r.*, c.name
+      SELECT r.*, c.name, c.no_receipt
       FROM receipts r
       INNER JOIN clients c ON r.client_id = c.id
       WHERE r.id = ?
@@ -767,10 +948,77 @@ ipcMain.handle("get-receipt-by-id", (event, receiptId) => {
   }
 });
 
+//talões pela data real de entrega (um dia só).
+//Lá é uma rota HTTP; aqui é consulta direta ao SQLite.
+//Devolve a lista por ordem crescente de id, como as outras pesquisas deste
+//ficheiro — quem chama faz .reverse() para mostrar os mais recentes no topo.
+ipcMain.handle("get-receipts-by-delivery-date", (event, date) => {
+  //aceita só AAAA-MM-DD: é o formato em que a coluna está gravada, e uma data
+  //mal formada devolveria silenciosamente uma lista vazia
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date ?? ""))) {
+    return { success: false, message: "Data de entrega inválida." };
+  }
+
+  try {
+    const query = `
+      SELECT r.*, c.name, c.no_receipt
+      FROM receipts r
+      INNER JOIN clients c ON r.client_id = c.id
+      WHERE r.delivery_date = ?
+      ORDER BY r.id
+    `;
+    const receipts = db.prepare(query).all(date);
+
+    //Um dia sem entregas é uma resposta normal, não um erro: devolve lista
+    //vazia em vez de success:false, ao contrário das outras pesquisas daqui.
+    //O aviso é dado na app, e só quando foi o utilizador a pedir a pesquisa.
+    return { success: true, receipts };
+  } catch (error) {
+    console.error("Erro ao procurar talões por data de entrega:", error);
+    return { success: false, message: "Erro ao procurar talões por data de entrega." };
+  }
+});
+
+//anos com talões registados (alimenta os seletores de ano)
+ipcMain.handle("get-receipt-years", () => {
+  try {
+    const rows = db.prepare(
+      "SELECT DISTINCT year FROM receipts WHERE year IS NOT NULL ORDER BY year DESC"
+    ).all();
+
+    return { success: true, years: rows.map((r) => r.year) };
+  } catch (error) {
+    console.error("Erro ao obter anos com talões:", error);
+    return { success: false, message: "Erro ao obter os anos com talões." };
+  }
+});
+
+//talão pelo número de negócio (numeração anual)
+ipcMain.handle("get-receipt-by-year-number", (event, number, year) => {
+  try {
+    const query = `
+      SELECT r.*, c.name, c.no_receipt
+      FROM receipts r
+      INNER JOIN clients c ON r.client_id = c.id
+      WHERE r.year = ? AND r.number = ?
+    `;
+    const receipt = db.prepare(query).get(year, number);
+
+    if (receipt) {
+      return { success: true, receipt };
+    } else {
+      return { success: false, message: "Talão não existe." };
+    }
+  } catch (error) {
+    console.error("Erro ao procurar talão pelo número:", error);
+    return { success: false, message: "Erro ao procurar talão pelo número." };
+  }
+});
+
 ipcMain.handle("get-receipts-by-client", (event, clientId) => {
   try {
     const query = `
-      SELECT r.*, c.name
+      SELECT r.*, c.name, c.no_receipt
       FROM receipts r
       INNER JOIN clients c ON r.client_id = c.id
       WHERE r.client_id = ?
@@ -791,7 +1039,7 @@ ipcMain.handle("get-receipts-by-client", (event, clientId) => {
 ipcMain.handle("get-receipts-by-number", (event, clientNumber) => {
   try {
     const query = `
-      SELECT r.*, c.name, c.number AS client_number
+      SELECT r.*, c.name, c.number AS client_number, c.no_receipt
       FROM receipts r
       INNER JOIN clients c ON r.client_id = c.id
       WHERE c.number = ?
@@ -819,7 +1067,7 @@ ipcMain.handle("get-receipts-by-date", (event, startDate, endDate) => {
     const formattedEndDate = endDate + " 23:59:59";   // Data de fim com hora final
 
     const query = `
-      SELECT r.*, c.name 
+      SELECT r.*, c.name, c.no_receipt
       FROM receipts r
       INNER JOIN clients c ON r.client_id = c.id
       WHERE created_at BETWEEN ? AND ?
@@ -863,6 +1111,23 @@ ipcMain.handle("edit-receipt", (event, updatedFields) => {
   } catch (error) {
     console.error("Erro ao editar talão:", error);
     return { success: false, message: "Erro ao editar talão." };
+  }
+});
+
+//marcação do talão: bit independente do conteúdo, gravado à parte da edição
+ipcMain.handle("set-receipt-marked", (event, receiptId, marked) => {
+  try {
+    const result = db.prepare("UPDATE receipts SET marked = ? WHERE id = ?")
+                     .run(marked ? 1 : 0, receiptId);
+
+    if (result.changes > 0) {
+      return { success: true, marked: !!marked };
+    } else {
+      return { success: false, message: "Talão não encontrado." };
+    }
+  } catch (error) {
+    console.error("Erro ao marcar talão:", error);
+    return { success: false, message: "Erro ao marcar o talão." };
   }
 });
 

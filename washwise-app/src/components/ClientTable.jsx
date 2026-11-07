@@ -79,7 +79,10 @@ const ClientTable = ({ filteredClients, updateFilteredClients, selectedClientId,
         <tbody>
           {clientsWithEmptyRows.map((client, index) => (
             <tr key={index}>
-              <td className="p-2 pl-5 text-3xl text-left font-normal border-r-4 border-b-2 border-[#B8B8B8] bg-[#FFFFFF] h-[10%] cursor-default">
+              {/* areia (#E0DAD1) marca os clientes Sem Talão; afasta-se do #D9D9D9
+                  do cabeçalho, que fica fixo por cima ao rolar a lista */}
+              <td className={`p-2 pl-5 text-3xl text-left font-normal border-r-4 border-b-2 border-[#B8B8B8] h-[10%] cursor-default
+                ${client?.no_receipt ? "bg-[#E0DAD1]" : "bg-[#FFFFFF]"}`}>
                 {client?.name || ""}
               </td>
               <td className="p-2 pl-5 text-2xl bg-[#FFFFFF] border-b-2 border-[#B8B8B8] cursor-default">
