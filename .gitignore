@@ -128,3 +128,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# WashWise: nunca versionar binarios nem bases de dados (repo publico).
+# Os instaladores vao para as Releases do GitHub.
+*.exe
+*.db
+*.sqbpro
