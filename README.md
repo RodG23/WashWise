@@ -1,20 +1,28 @@
 # WashWise - Laundry Management App
-WashWise is a desktop application for laundry management, built with Electron, React, and SQLite. It provides a seamless way to manage customers, products, and orders while working completely offline, ensuring reliability and fast operations.
 
-## Tech Stack
-- Electron (Desktop App) 
-- React (Frontend)
-- SQLite (Local Database)
+WashWise is a desktop application for laundry management, built with Electron and React. This is the **multi-workstation edition**: several counters work at the same time against a shared server, so every receipt, customer and item is the same on all of them.
+
+> Looking for the standalone edition (one computer, local SQLite database, no server)? See the [`SinglePC`](https://github.com/RodG23/WashWise/tree/SinglePC) branch.
+
+## Architecture
+
+- **Desktop client** (this repository) - Electron + React + Tailwind CSS, installed on each workstation
+- **Server** (separate, private repository) - Fastify REST API + PostgreSQL, running in Docker on the shop's local network
+- **Mutual TLS** - the client and the server authenticate each other with certificates issued by the shop's own certificate authority; nothing is exposed to the internet
+- **Safe concurrent editing** - records carry a version number, so two workstations editing the same receipt or customer never silently overwrite each other
+- **Server status banner** - the app warns when the server cannot be reached instead of failing silently
 
 ## Features
 
-- Customer management (add, edit, delete)
-- Laundry item management
-- Create and manage service orders
-- ESC/POS receipt printing
-- Local data storage with SQLite
-- 100% offline functionality 
-- One-Click database backup
+- **Customers** - add, edit and search by name or phone number; customers can be flagged as *"no receipt"*, which prints a name label instead of the usual number ticket
+- **Items** - catalogue of garments and services with reference, type, colour, style and price
+- **Orders** - receipts numbered per year, with quantity, notes per item and paid/pending/collected states
+- **Pick-up date** - choose a weekday (with modifiers such as *"without fail"*) or an exact date from a calendar, with a `+7` shortcut
+- **Search and filters** - by receipt number, customer, phone, date range, year, state, marking and pick-up day
+- **Order marking** - tick receipts to keep track of them while working through a list
+- **Search inside an order** - find an item by description or note in large orders
+- **Printing** - ESC/POS thermal printing of the full receipt, number label and free text with up to 100 copies
+- **One-click database backup** on the server
 
 
 ## Screenshots
@@ -49,6 +57,8 @@ Displays item management with search and filter functionality. The table lists e
 
 ## How to run (for development)
 
+The client needs a running WashWise server and a client certificate. Neither is part of this repository.
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/RodG23/WashWise.git
@@ -60,28 +70,30 @@ cd washwise-app
 npm install
 ```
 
-3. Run Frontend:
+3. Place the client certificates in `washwise-app/certs/` (`ca.crt.pem`, `client.crt.pem`, `client.key.pem`). This folder is ignored by Git and must never be committed.
+
+4. Start the server locally. In development the app connects to `https://127.0.0.1:5050`.
+
+5. Run Frontend:
 ```bash
 npm run dev
 ```
 
-4. Run desktop app:
+6. Run desktop app:
 ```bash
 npm run electron
 ```
 <br/>
 
-## How to install (for Windows)
+## How to install
 
-Download and execute the installer.
+There is no public installer for this edition: it only works together with the shop's private server and certificates.
 
- [![Download](https://img.shields.io/badge/download-installer-green)](https://github.com/RodG23/WashWise/raw/main/WashWise_Setup.exe)
+For a ready-to-use installer of the standalone edition, see the [`SinglePC` releases](https://github.com/RodG23/WashWise/releases/tag/eng-v1.2.0).
 
 
 ---
 
 WashWise is designed to simplify and streamline laundry business operations.
 
-![Status](https://img.shields.io/badge/status-Complete-brightgreen)
-
-
+![Status](https://img.shields.io/badge/status-In%20production-brightgreen)
