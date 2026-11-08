@@ -627,9 +627,17 @@ const ReceiptFilters = ({ updateFilteredReceipts, onReceiptSelect, onCustomPrint
                 <div
                   key={id}
                   ref={(el) => (itemRefs.current[id] = el)}
+                  // Sem Talão a areia, igual à lista do Novo Talão (ClientSearch):
+                  // hover e destaque do teclado no areia mais escuro (#CDC3B5).
                   className={`w-full flex justify-center border-b border-[rgba(0,0,0,0.2)] text-xl cursor-pointer p-2
-                    hover:bg-stone-400 hover:rounded-2xl ${
-                      isHighlighted ? "bg-stone-400 rounded-2xl" : ""
+                    hover:rounded-2xl ${
+                      res.no_receipt
+                        ? isHighlighted
+                          ? "bg-[#CDC3B5] rounded-2xl hover:bg-[#CDC3B5]"
+                          : "bg-[#E0DAD1] rounded-2xl hover:bg-[#CDC3B5]"
+                        : isHighlighted
+                        ? "bg-stone-400 rounded-2xl hover:bg-stone-400"
+                        : "hover:bg-stone-400"
                     }`}
                     onClick={() => handleItemClick(res)}
                 >
