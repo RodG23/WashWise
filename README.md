@@ -1,20 +1,27 @@
-# WashWise - Laundry Management App
-WashWise is a desktop application for laundry management, built with Electron, React, and SQLite. It provides a seamless way to manage customers, products, and orders while working completely offline, ensuring reliability and fast operations.
+# WashWise - Laundry Management App (Single PC)
+
+WashWise is a desktop application for laundry and ironing shop management, built with Electron, React and SQLite. This is the **single-PC edition**: everything runs on one computer with a local database, no server and no network required.
+
+> Looking for the multi-workstation edition (shared PostgreSQL server)? See the [`main`](https://github.com/RodG23/WashWise/tree/main) branch.
 
 ## Tech Stack
-- Electron (Desktop App) 
-- React (Frontend)
-- SQLite (Local Database)
+- Electron (Desktop App)
+- React + Tailwind CSS (Frontend)
+- SQLite via better-sqlite3 (Local Database, migrations run automatically on startup)
+- ESC/POS thermal printing
 
 ## Features
 
-- Customer management (add, edit, delete)
-- Laundry item management
-- Create and manage service orders
-- ESC/POS receipt printing
-- Local data storage with SQLite
-- 100% offline functionality 
-- One-Click database backup
+- **Customers** - add, edit and search by name or phone number; customers can be flagged as *"no receipt"*, which prints a name label instead of the usual number ticket
+- **Items** - catalogue of garments and services with reference, type, colour, style and price
+- **Orders** - receipts numbered per year, with quantity, notes per item and paid/pending/collected states
+- **Pick-up date** - choose a weekday (with modifiers such as *"without fail"*) or an exact date from a calendar, with a `+7` shortcut
+- **Search and filters** - by receipt number, customer, phone, date range, year, state, marking and pick-up day
+- **Order marking** - tick receipts to keep track of them while working through a list
+- **Search inside an order** - find an item by description or note in large orders
+- **Printing** - full receipt, number label and free-text printing with up to 100 copies
+- **One-click database backup**
+- 100% offline
 
 
 ## Screenshots
@@ -49,15 +56,16 @@ Displays item management with search and filter functionality. The table lists e
 
 ## How to run (for development)
 
-1. Clone the repository:
+1. Clone the repository on the `SinglePC` branch:
 ```bash
-git clone https://github.com/RodG23/WashWise.git
+git clone -b SinglePC https://github.com/RodG23/WashWise.git
 ```
 
-2. Install dependencies:
+2. Install dependencies and rebuild the SQLite driver for Electron:
 ```bash
 cd washwise-app
 npm install
+npx electron-rebuild -f -w better-sqlite3
 ```
 
 3. Run Frontend:
@@ -73,15 +81,13 @@ npm run electron
 
 ## How to install (for Windows)
 
-Download and execute the installer.
+Download the installer from the [Releases page](https://github.com/RodG23/WashWise/releases/tag/eng-v1.2.0) and run it. The database is created automatically on first launch.
 
- [![Download](https://img.shields.io/badge/download-installer-green)](https://github.com/RodG23/WashWise/raw/main/WashWise_Setup.exe)
+ [![Download](https://img.shields.io/badge/download-installer%201.2.0-green)](https://github.com/RodG23/WashWise/releases/tag/eng-v1.2.0)
 
 
 ---
 
 WashWise is designed to simplify and streamline laundry business operations.
 
-![Status](https://img.shields.io/badge/status-Complete-brightgreen)
-
-
+![Status](https://img.shields.io/badge/status-In%20production-brightgreen)
