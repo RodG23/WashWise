@@ -49,8 +49,7 @@
     "productName": "WashWise",
     "files": [
       "dist/**/*",
-      "electron/**/*",
-      "washwise.db"
+      "electron/**/*"
     ],
     "directories": {
       "output": "release"
